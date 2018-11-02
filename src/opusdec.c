@@ -660,7 +660,7 @@ static void drain_resampler(FILE *fout, int file_output,
    free(zeros);
 }
 
-int opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[])
+int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[])
 {
    unsigned char channel_map[OPUS_CHANNEL_COUNT_MAX];
    float clipmem[8]={0};

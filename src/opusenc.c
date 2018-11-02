@@ -348,7 +348,7 @@ static int is_valid_ctl(int request)
   return 0;
 }
 
- int opusenc_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[])
+ int __cdecl opusenc_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[])
 {
   static const input_format raw_format = {NULL, 0, raw_open, wav_close, "raw",N_("RAW file reader")};
   struct option long_options[] =

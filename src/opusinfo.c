@@ -948,7 +948,7 @@ static void usage(void)
     printf(_("\t-V Output version information and exit.\n"));
 }
 
-int opusinfo_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[])
+int __cdecl opusinfo_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[])
 {
     int f, ret;
 
