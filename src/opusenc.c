@@ -348,7 +348,7 @@ static int is_valid_ctl(int request)
   return 0;
 }
 
-int main(int argc, char **argv)
+ int opusenc_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[])
 {
   static const input_format raw_format = {NULL, 0, raw_open, wav_close, "raw",N_("RAW file reader")};
   struct option long_options[] =
@@ -448,10 +448,7 @@ int main(int argc, char **argv)
   }
 
 #ifdef WIN_UNICODE
-  (void)argc;
-  (void)argv;
-
-  init_commandline_arguments_utf8(&argc_utf8, &argv_utf8);
+  init_commandline_arguments_utf8(wargc, wargv, wenvp, &argc_utf8, &argv_utf8);
 #endif
 
   opt_ctls_ctlval=NULL;

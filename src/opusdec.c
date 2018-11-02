@@ -660,7 +660,7 @@ static void drain_resampler(FILE *fout, int file_output,
    free(zeros);
 }
 
-int main(int argc, char **argv)
+int opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[])
 {
    unsigned char channel_map[OPUS_CHANNEL_COUNT_MAX];
    float clipmem[8]={0};
@@ -724,11 +724,7 @@ int main(int argc, char **argv)
    }
 
 #ifdef WIN_UNICODE
-   (void)argc;
-   (void)argv;
-
-   init_console_utf8();
-   init_commandline_arguments_utf8(&argc_utf8, &argv_utf8);
+   init_commandline_arguments_utf8(wargc, wargv, wenvp, &argc_utf8, &argv_utf8);
 #endif
 
    /*Process options*/
@@ -1190,7 +1186,6 @@ done:
    if (st) op_free(st);
 #ifdef WIN_UNICODE
    free_commandline_arguments_utf8(&argc_utf8, &argv_utf8);
-   uninit_console_utf8();
 #endif
    return exit_code;
 }

@@ -948,7 +948,7 @@ static void usage(void)
     printf(_("\t-V Output version information and exit.\n"));
 }
 
-int main(int argc, char **argv)
+int opusinfo_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[])
 {
     int f, ret;
 
@@ -956,11 +956,7 @@ int main(int argc, char **argv)
     int argc_utf8;
     char **argv_utf8;
 
-    (void)argc;
-    (void)argv;
-
-    init_console_utf8();
-    init_commandline_arguments_utf8(&argc_utf8, &argv_utf8);
+	init_commandline_arguments_utf8(wargc, wargv, wenvp, &argc_utf8, &argv_utf8);
 #endif
 
     if(argc_utf8 < 2) {
@@ -970,9 +966,6 @@ int main(int argc, char **argv)
                   "opusinfo is a tool for printing information about Opus files\n"
                   "and for diagnosing problems with them.\n"
                   "Full help shown with \"opusinfo -h\".\n"));
-#ifdef WIN_UNICODE
-        uninit_console_utf8();
-#endif
         exit(1);
     }
 
@@ -1017,7 +1010,6 @@ int main(int argc, char **argv)
 
 #ifdef WIN_UNICODE
     free_commandline_arguments_utf8(&argc_utf8, &argv_utf8);
-    uninit_console_utf8();
 #endif
 
     return ret;

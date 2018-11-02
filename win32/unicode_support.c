@@ -81,13 +81,9 @@ wchar_t *utf8_to_utf16(const char *input)
 	return ((Result > 0) && (Result <= BuffSize)) ? Buffer : NULL;
 }
 
-void init_commandline_arguments_utf8(int *argc, char ***argv)
+void init_commandline_arguments_utf8(int nArgs, wchar_t *szArglist[], wchar_t *wenvp[], int *argc, char ***argv)
 {
-	int i, nArgs;
-	LPWSTR *szArglist;
-
-	szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
-
+	int i;
 	if(NULL == szArglist)
 	{
 		fprintf(stderr, "\nFATAL: CommandLineToArgvW failed\n\n");
@@ -112,8 +108,6 @@ void init_commandline_arguments_utf8(int *argc, char ***argv)
 			exit(-1);
 		}
 	}
-
-	LocalFree(szArglist);
 }
 
 void free_commandline_arguments_utf8(int *argc, char ***argv)

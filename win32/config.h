@@ -2,7 +2,7 @@
 #define CONFIG_H
 
 /* comment to disable flac dependency */
-#define HAVE_LIBFLAC          1
+//#define HAVE_LIBFLAC          1
 /* comment to compile with dynamic flac */
 #define FLAC__NO_DLL
 /* comment to use slower resampler that uses less memory */
