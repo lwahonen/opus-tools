@@ -400,10 +400,7 @@ static int out_file_open(const char *outFile, int *wav_format, int rate,
    } else {
       if (strcmp(outFile,"-")==0)
       {
-#if defined WIN32 || defined _WIN32
-         _setmode(_fileno(stdout), _O_BINARY);
-#endif
-         *fout=stdout;
+         *fout=stdout_pipe_handle;
       }
       else
       {
@@ -660,7 +657,7 @@ static void drain_resampler(FILE *fout, int file_output,
    free(zeros);
 }
 
-int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[])
+int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], FILE* stdin_pipe_handle, FILE* stdout_pipe_handle)
 {
    unsigned char channel_map[OPUS_CHANNEL_COUNT_MAX];
    float clipmem[8]={0};
@@ -834,12 +831,8 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[])
    {
       OpusFileCallbacks cb={NULL,NULL,NULL,NULL};
       int fd;
-#if defined WIN32 || defined _WIN32
-      fd = _fileno(stdin);
-      _setmode(fd, _O_BINARY);
-#else
-      fd = fileno(stdin);
-#endif
+
+      fd = fileno(stdin_pipe_handle);
       st=op_open_callbacks(op_fdopen(&cb, fd, "rb"), &cb, NULL, 0, NULL);
    }
    else

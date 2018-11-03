@@ -348,7 +348,7 @@ static int is_valid_ctl(int request)
   return 0;
 }
 
- int __cdecl opusenc_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[])
+int opusencoder_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], FILE* stdin_pipe_handle, FILE* stdout_pipe_handle)
 {
   static const input_format raw_format = {NULL, 0, raw_open, wav_close, "raw",N_("RAW file reader")};
   struct option long_options[] =
@@ -802,12 +802,7 @@ static int is_valid_ctl(int request)
   }
 
   if (strcmp(inFile, "-")==0) {
-#if defined WIN32 || defined _WIN32
-    _setmode(_fileno(stdin), _O_BINARY);
-#elif defined OS2
-    _fsetmode(stdin,"b");
-#endif
-    fin=stdin;
+    fin= stdin_pipe_handle;
   } else {
     fin=fopen_utf8(inFile, "rb");
     if (!fin) {
@@ -1010,10 +1005,7 @@ static int is_valid_ctl(int request)
   }
 
   if (strcmp(outFile,"-")==0) {
-#if defined WIN32 || defined _WIN32
-    _setmode(_fileno(stdout), _O_BINARY);
-#endif
-    data.fout=stdout;
+    data.fout= stdout_pipe_handle;
   } else {
     data.fout=fopen_utf8(outFile, "wb");
     if (!data.fout) {
