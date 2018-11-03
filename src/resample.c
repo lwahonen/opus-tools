@@ -274,7 +274,7 @@ int main(int argc, char **argv)
 /* The slow way of computing a sinc for the table. Should improve that some day */
 static spx_word16_t sinc(float cutoff, float x, int N, const struct FuncDef *window_func)
 {
-   /*fprintf (stderr, "%f ", x);*/
+   /*fprintf (stderr_pipe_handle, "%f ", x);*/
    float xx = x * cutoff;
    if (fabs(x)<1e-6f)
       return WORD2INT(32768.*cutoff);
@@ -287,7 +287,7 @@ static spx_word16_t sinc(float cutoff, float x, int N, const struct FuncDef *win
 /* The slow way of computing a sinc for the table. Should improve that some day */
 static spx_word16_t sinc(float cutoff, float x, int N, const struct FuncDef *window_func)
 {
-   /*fprintf (stderr, "%f ", x);*/
+   /*fprintf (stderr_pipe_handle, "%f ", x);*/
    float xx = x * cutoff;
    if (fabs(x)<1e-6)
       return cutoff;
@@ -684,7 +684,7 @@ static int update_filter(SpeexResamplerState *st)
       else
          st->resampler_ptr = resampler_basic_direct_single;
 #endif
-      /*fprintf (stderr, "resampler uses direct sinc table and normalised cutoff %f\n", cutoff);*/
+      /*fprintf (stderr_pipe_handle, "resampler uses direct sinc table and normalised cutoff %f\n", cutoff);*/
    } else {
       spx_int32_t i;
       for (i=-4;i<(spx_int32_t)(st->oversample*st->filt_len+4);i++)
@@ -697,7 +697,7 @@ static int update_filter(SpeexResamplerState *st)
       else
          st->resampler_ptr = resampler_basic_interpolate_single;
 #endif
-      /*fprintf (stderr, "resampler uses interpolated sinc table and normalised cutoff %f\n", cutoff);*/
+      /*fprintf (stderr_pipe_handle, "resampler uses interpolated sinc table and normalised cutoff %f\n", cutoff);*/
    }
 
    /* Here's the place where we update the filter memory to take into account

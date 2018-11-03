@@ -119,6 +119,8 @@ input_format formats[] = {
     {NULL, 0, NULL, NULL, NULL, NULL}
 };
 
+extern FILE* stderr_pipe_handle;
+
 input_format *open_audio_file(FILE *in, oe_enc_opt *opt)
 {
     int j=0;
@@ -214,7 +216,7 @@ static int find_wav_chunk(FILE *in, char *type, unsigned int *len)
         if (memcmp(buf, type, 4))
         {
             sanitize_fourcc(buf);
-            fprintf(stderr, _("Skipping chunk of type \"%.4s\", length %u\n"),
+            fprintf(stderr_pipe_handle, _("Skipping chunk of type \"%.4s\", length %u\n"),
                 buf, chunklen);
 
             if (!seek_forward(in, (ogg_int64_t)chunklen + (chunklen & 1)))
@@ -343,13 +345,13 @@ int aiff_open(FILE *in, oe_enc_opt *opt, unsigned char *buf, int buflen)
 
     if (!find_aiff_chunk(in, "COMM", &len))
     {
-        fprintf(stderr, _("ERROR: No common chunk found in AIFF file\n"));
+        fprintf(stderr_pipe_handle, _("ERROR: No common chunk found in AIFF file\n"));
         return 0; /* EOF before COMM chunk */
     }
 
     if (len < 18 || !read_chunk(in, buffer, sizeof(buffer), &len))
     {
-        fprintf(stderr, _("ERROR: Incomplete common chunk in AIFF header\n"));
+        fprintf(stderr_pipe_handle, _("ERROR: Incomplete common chunk in AIFF header\n"));
         return 0;
     }
 
@@ -360,7 +362,7 @@ int aiff_open(FILE *in, oe_enc_opt *opt, unsigned char *buf, int buflen)
 
     if (format.channels <= 0)
     {
-        fprintf(stderr, _("ERROR: Invalid channel count in AIFF header\n"));
+        fprintf(stderr_pipe_handle, _("ERROR: Invalid channel count in AIFF header\n"));
         return 0;
     }
 
@@ -368,7 +370,7 @@ int aiff_open(FILE *in, oe_enc_opt *opt, unsigned char *buf, int buflen)
     {
         if (len < 22)
         {
-            fprintf(stderr, _("ERROR: AIFF-C header truncated.\n"));
+            fprintf(stderr_pipe_handle, _("ERROR: AIFF-C header truncated.\n"));
             return 0;
         }
 
@@ -383,7 +385,7 @@ int aiff_open(FILE *in, oe_enc_opt *opt, unsigned char *buf, int buflen)
         else
         {
             sanitize_fourcc(buffer+18);
-            fprintf(stderr, _("ERROR: Can't handle compressed AIFF-C \"%.4s\"\n"),
+            fprintf(stderr_pipe_handle, _("ERROR: Can't handle compressed AIFF-C \"%.4s\"\n"),
                 buffer+18);
             return 0; /* Compressed. Can't handle */
         }
@@ -391,26 +393,26 @@ int aiff_open(FILE *in, oe_enc_opt *opt, unsigned char *buf, int buflen)
 
     if (!(format.rate >= 1 && format.rate <= INT_MAX))
     {
-        fprintf(stderr, _("ERROR: Preposterous sample rate in AIFF header: %g Hz\n"),
+        fprintf(stderr_pipe_handle, _("ERROR: Preposterous sample rate in AIFF header: %g Hz\n"),
             format.rate);
         return 0;
     }
 
     if (!find_aiff_chunk(in, "SSND", &len))
     {
-        fprintf(stderr, _("ERROR: No SSND chunk found in AIFF file\n"));
+        fprintf(stderr_pipe_handle, _("ERROR: No SSND chunk found in AIFF file\n"));
         return 0; /* No SSND chunk -> no actual audio */
     }
 
     if (len < 8)
     {
-        fprintf(stderr, _("ERROR: Corrupted SSND chunk in AIFF header\n"));
+        fprintf(stderr_pipe_handle, _("ERROR: Corrupted SSND chunk in AIFF header\n"));
         return 0;
     }
 
     if (fread(buf2,1,8, in) < 8)
     {
-        fprintf(stderr, _("ERROR: Unexpected EOF reading AIFF header\n"));
+        fprintf(stderr_pipe_handle, _("ERROR: Unexpected EOF reading AIFF header\n"));
         return 0;
     }
 
@@ -438,7 +440,7 @@ int aiff_open(FILE *in, oe_enc_opt *opt, unsigned char *buf, int buflen)
         aiff->unsigned8bit = 0;
 
         if (aiff->channels>3)
-          fprintf(stderr, _("WARNING: AIFF[-C] files with more than three channels use\n"
+          fprintf(stderr_pipe_handle, _("WARNING: AIFF[-C] files with more than three channels use\n"
                   "speaker locations incompatible with Vorbis surround definitions.\n"
                   "Not performing channel location mapping.\n"));
 
@@ -459,7 +461,7 @@ int aiff_open(FILE *in, oe_enc_opt *opt, unsigned char *buf, int buflen)
     }
     else
     {
-        fprintf(stderr, _("ERROR: Unsupported AIFF/AIFC file.\n"
+        fprintf(stderr_pipe_handle, _("ERROR: Unsupported AIFF/AIFC file.\n"
                 "Must be 8 or 16 bit PCM.\n"));
         return 0;
     }
@@ -500,13 +502,13 @@ int wav_open(FILE *in, oe_enc_opt *opt, unsigned char *oldbuf, int buflen)
 
     if (!find_wav_chunk(in, "fmt ", &len))
     {
-        fprintf(stderr, _("ERROR: No format chunk found in WAV file\n"));
+        fprintf(stderr_pipe_handle, _("ERROR: No format chunk found in WAV file\n"));
         return 0;
     }
 
     if (len < 16)
     {
-        fprintf(stderr, _("ERROR: Unrecognised format chunk in WAV header\n"));
+        fprintf(stderr_pipe_handle, _("ERROR: Unrecognised format chunk in WAV header\n"));
         return 0; /* Weird format chunk */
     }
 
@@ -518,13 +520,13 @@ int wav_open(FILE *in, oe_enc_opt *opt, unsigned char *oldbuf, int buflen)
      * author.
      */
     if (len!=16 && len!=18 && len!=40)
-        fprintf(stderr,
+        fprintf(stderr_pipe_handle,
                 _("Warning: INVALID format chunk in wav header.\n"
                 " Trying to read anyway (may not work)...\n"));
 
     if (!read_chunk(in, buf, sizeof(buf), &len))
     {
-        fprintf(stderr, _("ERROR: Incomplete format chunk in WAV header\n"));
+        fprintf(stderr_pipe_handle, _("ERROR: Incomplete format chunk in WAV header\n"));
         return 0;
     }
 
@@ -537,7 +539,7 @@ int wav_open(FILE *in, oe_enc_opt *opt, unsigned char *oldbuf, int buflen)
 
     if (format.channels == 0)
     {
-        fprintf(stderr, _("ERROR: Zero channels in WAV header\n"));
+        fprintf(stderr_pipe_handle, _("ERROR: Zero channels in WAV header\n"));
         return 0;
     }
 
@@ -545,7 +547,7 @@ int wav_open(FILE *in, oe_enc_opt *opt, unsigned char *oldbuf, int buflen)
     {
         if (len<40)
         {
-            fprintf(stderr, _("ERROR: Extended WAV format header invalid (too small)\n"));
+            fprintf(stderr_pipe_handle, _("ERROR: Extended WAV format header invalid (too small)\n"));
             return 0;
         }
 
@@ -557,19 +559,19 @@ int wav_open(FILE *in, oe_enc_opt *opt, unsigned char *oldbuf, int buflen)
         /* warn the user if the format mask is not a supported/expected type */
         switch (format.mask) {
         case 1539: /* 4.0 using side surround instead of back */
-            fprintf(stderr, _("WARNING: WAV file uses side surround instead of rear for quadraphonic;\n"
+            fprintf(stderr_pipe_handle, _("WARNING: WAV file uses side surround instead of rear for quadraphonic;\n"
                 "remapping side speakers to rear in encoding.\n"));
             break;
         case 1551: /* 5.1 using side instead of rear */
-            fprintf(stderr, _("WARNING: WAV file uses side surround instead of rear for 5.1;\n"
+            fprintf(stderr_pipe_handle, _("WARNING: WAV file uses side surround instead of rear for 5.1;\n"
                 "remapping side speakers to rear in encoding.\n"));
             break;
         case 319:  /* 6.1 using rear instead of side */
-            fprintf(stderr, _("WARNING: WAV file uses rear surround instead of side for 6.1;\n"
+            fprintf(stderr_pipe_handle, _("WARNING: WAV file uses rear surround instead of side for 6.1;\n"
                 "remapping rear speakers to side in encoding.\n"));
             break;
         case 255:  /* 7.1 'Widescreen' */
-            fprintf(stderr, _("WARNING: WAV file is a 7.1 'Widescreen' channel mapping;\n"
+            fprintf(stderr_pipe_handle, _("WARNING: WAV file is a 7.1 'Widescreen' channel mapping;\n"
                 "remapping speakers to Vorbis 7.1 format.\n"));
             break;
         case 0:    /* default/undeclared */
@@ -583,7 +585,7 @@ int wav_open(FILE *in, oe_enc_opt *opt, unsigned char *oldbuf, int buflen)
         case 1599: /* 7.1 */
             break;
         default:
-            fprintf(stderr, _("WARNING: Unknown WAV surround channel mask: %u\n"
+            fprintf(stderr_pipe_handle, _("WARNING: Unknown WAV surround channel mask: %u\n"
                     "Blindly mapping speakers using default SMPTE/ITU ordering.\n"),
                     format.mask);
             break;
@@ -608,21 +610,21 @@ int wav_open(FILE *in, oe_enc_opt *opt, unsigned char *oldbuf, int buflen)
     }
     else
     {
-        fprintf(stderr, _("ERROR: Unsupported WAV file type.\n"
+        fprintf(stderr_pipe_handle, _("ERROR: Unsupported WAV file type.\n"
                 "Must be standard PCM or type 3 floating point PCM.\n"));
         return 0;
     }
 
     if (format.samplerate > INT_MAX)
     {
-        fprintf(stderr, _("ERROR: Preposterous sample rate in WAV header: %u Hz\n"),
+        fprintf(stderr_pipe_handle, _("ERROR: Preposterous sample rate in WAV header: %u Hz\n"),
             format.samplerate);
         return 0;
     }
 
     if (!find_wav_chunk(in, "data", &len))
     {
-        fprintf(stderr, _("ERROR: No data chunk found in WAV file\n"));
+        fprintf(stderr_pipe_handle, _("ERROR: No data chunk found in WAV file\n"));
         return 0;
     }
 
@@ -630,7 +632,7 @@ int wav_open(FILE *in, oe_enc_opt *opt, unsigned char *oldbuf, int buflen)
         /* This is incorrect according to the spec. Warn loudly, then ignore
          * this value.
          */
-        fprintf(stderr, _("Warning: WAV 'block alignment' value is incorrect, "
+        fprintf(stderr_pipe_handle, _("Warning: WAV 'block alignment' value is incorrect, "
                     "ignoring.\n"
                     "The software that created this file is incorrect.\n"));
     }
@@ -706,7 +708,7 @@ int wav_open(FILE *in, oe_enc_opt *opt, unsigned char *oldbuf, int buflen)
     }
     else
     {
-        fprintf(stderr, _("ERROR: Unsupported WAV sample size.\n"
+        fprintf(stderr_pipe_handle, _("ERROR: Unsupported WAV sample size.\n"
                 "Must be 8, 16, or 24 bit PCM or 32 bit floating point PCM.\n"));
         return 0;
     }
@@ -790,13 +792,13 @@ long wav_read(void *in, float *buffer, int samples)
             }
         }
         else {
-            fprintf(stderr, _("Big endian 24 bit PCM data is not currently "
+            fprintf(stderr_pipe_handle, _("Big endian 24 bit PCM data is not currently "
                               "supported, aborting.\n"));
             return 0;
         }
     }
     else {
-        fprintf(stderr, _("Internal error: attempt to read unsupported "
+        fprintf(stderr_pipe_handle, _("Internal error: attempt to read unsupported "
                           "bitdepth %d\n"), f->samplesize);
         return 0;
     }
@@ -934,12 +936,12 @@ int setup_downmix(oe_enc_opt *opt, int out_channels)
     int i,j;
 
     if (opt->channels<=out_channels || out_channels>2 || opt->channels<=0 || out_channels<=0) {
-        fprintf(stderr, _("Downmix must actually downmix and only knows mono/stereo out.\n"));
+        fprintf(stderr_pipe_handle, _("Downmix must actually downmix and only knows mono/stereo out.\n"));
         return 0;
     }
 
     if (out_channels==2 && opt->channels>8) {
-        fprintf(stderr, _("Downmix only knows how to mix >8ch to mono.\n"));
+        fprintf(stderr_pipe_handle, _("Downmix only knows how to mix >8ch to mono.\n"));
         return 0;
     }
 

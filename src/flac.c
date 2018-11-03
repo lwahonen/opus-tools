@@ -136,7 +136,7 @@ static void metadata_callback(const FLAC__StreamDecoder *decoder,
           if(oi_strncasecmp(entry,"REPLAYGAIN_REFERENCE_LOUDNESS=",30)==0){
             gain=strtod(entry+30,&end);
             if(end<=entry+30){
-              fprintf(stderr,_("WARNING: Invalid ReplayGain tag: %s\n"),entry);
+              fprintf(stderr_pipe_handle,_("WARNING: Invalid ReplayGain tag: %s\n"),entry);
             }
             else reference_loudness=gain;
             continue;
@@ -144,7 +144,7 @@ static void metadata_callback(const FLAC__StreamDecoder *decoder,
           if(oi_strncasecmp(entry,"REPLAYGAIN_ALBUM_GAIN=",22)==0){
             gain=strtod(entry+22,&end);
             if(end<=entry+22){
-              fprintf(stderr,_("WARNING: Invalid ReplayGain tag: %s\n"),entry);
+              fprintf(stderr_pipe_handle,_("WARNING: Invalid ReplayGain tag: %s\n"),entry);
             }
             else{
               album_gain=gain;
@@ -155,7 +155,7 @@ static void metadata_callback(const FLAC__StreamDecoder *decoder,
           if(oi_strncasecmp(entry,"REPLAYGAIN_TRACK_GAIN=",22)==0){
             gain=strtod(entry+22,&end);
             if(end<entry+22){
-              fprintf(stderr,_("WARNING: Invalid ReplayGain tag: %s\n"),entry);
+              fprintf(stderr_pipe_handle,_("WARNING: Invalid ReplayGain tag: %s\n"),entry);
             }
             else{
               track_gain=gain;
@@ -168,8 +168,8 @@ static void metadata_callback(const FLAC__StreamDecoder *decoder,
             continue;
           }
           if(!strchr(entry,'=')){
-            fprintf(stderr,_("WARNING: Invalid comment: %s\n"),entry);
-            fprintf(stderr,
+            fprintf(stderr_pipe_handle,_("WARNING: Invalid comment: %s\n"),entry);
+            fprintf(stderr_pipe_handle,
                _("Discarding comment not in the form name=value\n"));
             continue;
           }
@@ -196,11 +196,11 @@ static void metadata_callback(const FLAC__StreamDecoder *decoder,
     case FLAC__METADATA_TYPE_PICTURE:
       if(!inopt->copy_pictures)break;
       if((unsigned)metadata->data.picture.type>20){
-        fprintf(stderr,
+        fprintf(stderr_pipe_handle,
           _("WARNING: Skipping picture with invalid picture type %u\n"),
           (unsigned)metadata->data.picture.type);
       }else if(!strcmp(metadata->data.picture.mime_type,"-->")){
-        fprintf(stderr,
+        fprintf(stderr_pipe_handle,
           _("WARNING: Skipping unsupported picture URL (type %u)\n"),
           (unsigned)metadata->data.picture.type);
       }else{
@@ -211,7 +211,7 @@ static void metadata_callback(const FLAC__StreamDecoder *decoder,
           (int)metadata->data.picture.type,
           (const char *)metadata->data.picture.description);
         if(ret<0){
-          fprintf(stderr,_("WARNING: Skipping picture (%s, type %u): %s\n"),
+          fprintf(stderr_pipe_handle,_("WARNING: Skipping picture (%s, type %u): %s\n"),
             metadata->data.picture.mime_type,
             (unsigned)metadata->data.picture.type,
             ope_strerror(ret));
@@ -386,7 +386,7 @@ int flac_open(FILE *in,oe_enc_opt *opt,unsigned char *oldbuf,int buflen)
     }
   }
   flac_close(flac);
-  fprintf(stderr,_("ERROR: Could not open FLAC stream.\n"));
+  fprintf(stderr_pipe_handle,_("ERROR: Could not open FLAC stream.\n"));
   return 0;
 }
 

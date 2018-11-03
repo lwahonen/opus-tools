@@ -27,14 +27,15 @@
    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#if defined WIN32 || defined _WIN32
 
+#if defined WIN32 || defined _WIN32
 # include "unicode_support.h"
 
 # include <windows.h>
 # include <io.h>
 
 static UINT g_old_output_cp = ((UINT)-1);
+extern FILE* stderr_pipe_handle;
 
 char *utf16_to_utf8(const wchar_t *input)
 {
@@ -86,7 +87,7 @@ void init_commandline_arguments_utf8(int nArgs, wchar_t *szArglist[], wchar_t *w
 	int i;
 	if(NULL == szArglist)
 	{
-		fprintf(stderr, "\nFATAL: CommandLineToArgvW failed\n\n");
+		fprintf(stderr_pipe_handle, "\nFATAL: CommandLineToArgvW failed\n\n");
 		exit(-1);
 	}
 
@@ -95,7 +96,7 @@ void init_commandline_arguments_utf8(int nArgs, wchar_t *szArglist[], wchar_t *w
 
 	if(NULL == *argv)
 	{
-		fprintf(stderr, "\nFATAL: Malloc failed\n\n");
+		fprintf(stderr_pipe_handle, "\nFATAL: Malloc failed\n\n");
 		exit(-1);
 	}
 	
@@ -104,7 +105,7 @@ void init_commandline_arguments_utf8(int nArgs, wchar_t *szArglist[], wchar_t *w
 		(*argv)[i] = utf16_to_utf8(szArglist[i]);
 		if(NULL == (*argv)[i])
 		{
-			fprintf(stderr, "\nFATAL: utf16_to_utf8 failed\n\n");
+			fprintf(stderr_pipe_handle, "\nFATAL: utf16_to_utf8 failed\n\n");
 			exit(-1);
 		}
 	}
