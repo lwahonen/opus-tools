@@ -82,13 +82,13 @@ wchar_t *utf8_to_utf16(const char *input)
 	return ((Result > 0) && (Result <= BuffSize)) ? Buffer : NULL;
 }
 
-void init_commandline_arguments_utf8(int nArgs, wchar_t *szArglist[], wchar_t *wenvp[], int *argc, char ***argv)
+int init_commandline_arguments_utf8(int nArgs, wchar_t *szArglist[], wchar_t *wenvp[], int *argc, char ***argv)
 {
 	int i;
 	if(NULL == szArglist)
 	{
 		fprintf(stderr_pipe_handle, "\nFATAL: CommandLineToArgvW failed\n\n");
-		exit(-1);
+		return 0;
 	}
 
 	*argv = (char**) malloc(sizeof(char*) * nArgs);
@@ -97,7 +97,7 @@ void init_commandline_arguments_utf8(int nArgs, wchar_t *szArglist[], wchar_t *w
 	if(NULL == *argv)
 	{
 		fprintf(stderr_pipe_handle, "\nFATAL: Malloc failed\n\n");
-		exit(-1);
+		return 0;
 	}
 	
 	for(i = 0; i < nArgs; i++)
@@ -106,9 +106,10 @@ void init_commandline_arguments_utf8(int nArgs, wchar_t *szArglist[], wchar_t *w
 		if(NULL == (*argv)[i])
 		{
 			fprintf(stderr_pipe_handle, "\nFATAL: utf16_to_utf8 failed\n\n");
-			exit(-1);
+			return 0;
 		}
 	}
+	return 1;
 }
 
 void free_commandline_arguments_utf8(int *argc, char ***argv)
