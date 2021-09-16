@@ -439,7 +439,7 @@ int aiff_open(FILE *in, oe_enc_opt *opt, unsigned char *buf, int buflen)
         aiff->bigendian = bigendian;
         aiff->unsigned8bit = 0;
 
-        if (aiff->channels>3)
+        if (opt->channels_format==CHANNELS_FORMAT_DEFAULT && aiff->channels>3)
           fprintf(stderr_pipe_handle, _("WARNING: AIFF[-C] files with more than three channels use\n"
                   "speaker locations incompatible with Vorbis surround definitions.\n"
                   "Not performing channel location mapping.\n"));
@@ -447,7 +447,7 @@ int aiff_open(FILE *in, oe_enc_opt *opt, unsigned char *buf, int buflen)
         opt->readdata = (void *)aiff;
 
         aiff->channel_permute = malloc(aiff->channels * sizeof(int));
-        if (aiff->channels <= 6)
+        if (opt->channels_format == CHANNELS_FORMAT_DEFAULT && aiff->channels <= 6)
             /* Where we know the mappings, use them. */
             memcpy(aiff->channel_permute, aiff_permute_matrix[aiff->channels-1],
                     sizeof(int) * aiff->channels);
@@ -555,40 +555,43 @@ int wav_open(FILE *in, oe_enc_opt *opt, unsigned char *oldbuf, int buflen)
         if (validbits < 1 || validbits > format.samplesize)
             validbits = format.samplesize;
 
-        format.mask = READ_U32_LE(buf+20);
-        /* warn the user if the format mask is not a supported/expected type */
-        switch (format.mask) {
-        case 1539: /* 4.0 using side surround instead of back */
-            fprintf(stderr_pipe_handle, _("WARNING: WAV file uses side surround instead of rear for quadraphonic;\n"
-                "remapping side speakers to rear in encoding.\n"));
-            break;
-        case 1551: /* 5.1 using side instead of rear */
-            fprintf(stderr_pipe_handle, _("WARNING: WAV file uses side surround instead of rear for 5.1;\n"
-                "remapping side speakers to rear in encoding.\n"));
-            break;
-        case 319:  /* 6.1 using rear instead of side */
-            fprintf(stderr_pipe_handle, _("WARNING: WAV file uses rear surround instead of side for 6.1;\n"
-                "remapping rear speakers to side in encoding.\n"));
-            break;
-        case 255:  /* 7.1 'Widescreen' */
-            fprintf(stderr_pipe_handle, _("WARNING: WAV file is a 7.1 'Widescreen' channel mapping;\n"
-                "remapping speakers to Vorbis 7.1 format.\n"));
-            break;
-        case 0:    /* default/undeclared */
-        case 1:    /* mono (left only) */
-        case 4:    /* mono (center only) */
-        case 3:    /* stereo */
-        case 51:   /* quad */
-        case 55:   /* 5.0 */
-        case 63:   /* 5.1 */
-        case 1807: /* 6.1 */
-        case 1599: /* 7.1 */
-            break;
-        default:
-            fprintf(stderr_pipe_handle, _("WARNING: Unknown WAV surround channel mask: %u\n"
-                    "Blindly mapping speakers using default SMPTE/ITU ordering.\n"),
-                    format.mask);
-            break;
+        if (opt->channels_format == CHANNELS_FORMAT_DEFAULT)
+        {
+            format.mask = READ_U32_LE(buf+20);
+            /* warn the user if the format mask is not a supported/expected type */
+            switch (format.mask) {
+            case 1539: /* 4.0 using side surround instead of back */
+                fprintf(stderr_pipe_handle, _("WARNING: WAV file uses side surround instead of rear for quadraphonic;\n"
+                    "remapping side speakers to rear in encoding.\n"));
+                break;
+            case 1551: /* 5.1 using side instead of rear */
+                fprintf(stderr_pipe_handle, _("WARNING: WAV file uses side surround instead of rear for 5.1;\n"
+                    "remapping side speakers to rear in encoding.\n"));
+                break;
+            case 319:  /* 6.1 using rear instead of side */
+                fprintf(stderr_pipe_handle, _("WARNING: WAV file uses rear surround instead of side for 6.1;\n"
+                    "remapping rear speakers to side in encoding.\n"));
+                break;
+            case 255:  /* 7.1 'Widescreen' */
+                fprintf(stderr_pipe_handle, _("WARNING: WAV file is a 7.1 'Widescreen' channel mapping;\n"
+                    "remapping speakers to Vorbis 7.1 format.\n"));
+                break;
+            case 0:    /* default/undeclared */
+            case 1:    /* mono (left only) */
+            case 4:    /* mono (center only) */
+            case 3:    /* stereo */
+            case 51:   /* quad */
+            case 55:   /* 5.0 */
+            case 63:   /* 5.1 */
+            case 1807: /* 6.1 */
+            case 1599: /* 7.1 */
+                break;
+            default:
+                fprintf(stderr_pipe_handle, _("WARNING: Unknown WAV surround channel mask: %u\n"
+                        "Blindly mapping speakers using default SMPTE/ITU ordering.\n"),
+                        format.mask);
+                break;
+            }
         }
         format.format = READ_U16_LE(buf+24);
     }
@@ -695,7 +698,7 @@ int wav_open(FILE *in, oe_enc_opt *opt, unsigned char *oldbuf, int buflen)
         opt->readdata = (void *)wav;
 
         wav->channel_permute = malloc(wav->channels * sizeof(int));
-        if (wav->channels <= 8)
+        if (opt->channels_format == CHANNELS_FORMAT_DEFAULT && wav->channels <= 8)
             /* Where we know the mappings, use them. */
             memcpy(wav->channel_permute, wav_permute_matrix[wav->channels-1],
                     sizeof(int) * wav->channels);
@@ -792,9 +795,17 @@ long wav_read(void *in, float *buffer, int samples)
             }
         }
         else {
-            fprintf(stderr_pipe_handle, _("Big endian 24 bit PCM data is not currently "
-                              "supported, aborting.\n"));
-            return 0;
+            for (i = 0; i < realsamples; i++)
+            {
+                for (j=0; j < f->channels; j++)
+                {
+                    buffer[i*f->channels+j] = ((buf[i*3*f->channels + 3*ch_permute[j]] << 16) |
+                      (((unsigned char *)buf)[i*3*f->channels + 3*ch_permute[j] + 1] << 8) |
+                      (((unsigned char *)buf)[i*3*f->channels + 3*ch_permute[j] + 2] & 0xff))
+                        / 8388608.0f;
+
+                }
+            }
         }
     }
     else {
@@ -817,9 +828,18 @@ long wav_ieee_read(void *in, float *buffer, int samples)
     realsamples = (int)fread(buf, 4*f->channels, realsamples, f->f);
     f->samplesread += realsamples;
 
-    for (i=0; i < realsamples; i++)
-        for (j=0; j < f->channels; j++)
-            buffer[i*f->channels+j] = get_le_float(buf + i*f->channels + f->channel_permute[j]);
+    if (!f->bigendian) {
+        for (i=0; i < realsamples; i++)
+            for (j=0; j < f->channels; j++)
+                buffer[i*f->channels+j] =
+                    get_le_float(buf + i*f->channels + f->channel_permute[j]);
+    }
+    else {
+        for (i=0; i < realsamples; i++)
+            for (j=0; j < f->channels; j++)
+                buffer[i*f->channels+j] =
+                    get_be_float(buf + i*f->channels + f->channel_permute[j]);
+    }
 
     return realsamples;
 }
@@ -850,7 +870,10 @@ int raw_open(FILE *in, oe_enc_opt *opt, unsigned char *buf, int buflen)
     for (i=0; i < wav->channels; i++)
       wav->channel_permute[i] = i;
 
-    opt->read_samples = wav_read;
+    if (opt->rawmode_f)
+        opt->read_samples = wav_ieee_read;
+    else
+        opt->read_samples = wav_read;
     opt->readdata = (void *)wav;
     opt->total_samples_per_channel = 0; /* raw mode, don't bother */
     return 1;

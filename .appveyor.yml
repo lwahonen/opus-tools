@@ -8,13 +8,14 @@ platform:
 - x64
 
 environment:
-  sample_url: https://people.xiph.org/~giles/2012/opus/ehren-paper_lights-96.opus
+  sample_url: https://gitlab.xiph.org/xiph/opus-website/-/raw/master/static/examples/ehren-paper_lights-96.opus
   opus_url: https://ci.appveyor.com/api/projects/$(APPVEYOR_ACCOUNT_NAME)/opus/artifacts/opus.zip
   opusfile_url: https://ci.appveyor.com/api/projects/$(APPVEYOR_ACCOUNT_NAME)/opusfile/artifacts/opusfile.zip
   libopusenc_url: https://ci.appveyor.com/api/projects/$(APPVEYOR_ACCOUNT_NAME)/libopusenc/artifacts/libopusenc.zip
 
 install:
   - cd %APPVEYOR_BUILD_FOLDER%
+  - curl --version
   - 'curl -LOG --data-urlencode "job=Configuration: %CONFIGURATION%; Platform: %PLATFORM%" %OPUS_URL%'
   - 7z x opus.zip -oopus-artifacts
   - 'curl -LOG --data-urlencode "job=Configuration: %CONFIGURATION%; Platform: %PLATFORM%" %OPUSFILE_URL%'
@@ -23,7 +24,7 @@ install:
   - 7z x libopusenc.zip -oopus-artifacts
   - move /Y opus-artifacts ..\opus
   - git clone -q https://github.com/xiph/ogg.git ..\ogg
-  - msbuild "..\ogg\win32\VS2015\libogg_static.sln" /property:Configuration=%CONFIGURATION%;Platform=%PLATFORM% /m /v:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+  - msbuild "..\ogg\win32\VS2015\libogg.sln" /property:Configuration=%CONFIGURATION%;Platform=%PLATFORM% /m /v:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
   - chocolatey install -y nasm
   - set PATH=%PROGRAMFILES%\nasm;%PATH%
   - git clone -q https://github.com/xiph/flac.git ..\flac
@@ -39,13 +40,12 @@ after_build:
   - cd %APPVEYOR_BUILD_FOLDER%
   - copy /Y COPYING LICENSE
   - 7z a opus-tools.zip .\win32\VS2015\%PLATFORM%\%CONFIGURATION%\*.exe .\LICENSE
-  - for %%a in (enc dec info) do curl -O https://mf4.xiph.org/jenkins/view/opus/job/opus-tools/ws/man/opus%%a.html
-  - 7z a opus-tools.zip .\opusenc.html .\opusdec.html .\opusinfo.html
+  - for %%a in (mandoc.css opusdec.html opusenc.html opusinfo.html) do curl -O https://gitlab.xiph.org/xiph/opus-website/-/raw/master/docs/opus-tools/%%a
+  - 7z a opus-tools.zip .\mandoc.css .\opusdec.html .\opusenc.html .\opusinfo.html
 
 test_script:
   - cd %APPVEYOR_BUILD_FOLDER%\win32\VS2015\%PLATFORM%\%CONFIGURATION%
-  - curl -o original.opus %SAMPLE_URL%
-  - opusdec.exe original.opus decoded.wav
+  - opusdec.exe %SAMPLE_URL% decoded.wav
   - opusenc.exe decoded.wav encoded.opus
   - opusinfo.exe encoded.opus
   - appveyor PushArtifact encoded.opus

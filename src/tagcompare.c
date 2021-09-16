@@ -1,7 +1,6 @@
-/**
-   @file cpusupport.h
-*/
-/*
+/* Copyright (C)2007-2021 Xiph.Org Foundation
+   File: tagcompare.c
+
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
@@ -26,42 +25,27 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef OPUSTOOLS_CPUSUPPORT_H
-# define OPUSTOOLS_CPUSUPPORT_H
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-/* We want to warn if we're built with SSE support, but running
-   on a host without those instructions. Therefore we disable
-   the query both if the compiler isn't supporting SSE, and on
-   targets which are guaranteed to have SSE. */
-# if !defined(__SSE__) || !(defined(_M_IX86) || defined(__i386__))
-#  define query_cpu_support() 0
-# else
+#include <stdlib.h>
 
-#if defined WIN32 || defined _WIN32
-#include <intrin.h>
-static inline int query_cpu_support(void)
+
+/*A version of strncasecmp() that is guaranteed to only ignore the case of
+   ASCII characters.*/
+int tagcompare(const char *a, const char *b, size_t n)
 {
-   int buffer[4];
-   __cpuid(buffer, 1);
-   return ((buffer[3] & (1<<25)) == 0) /*SSE*/
-#  ifdef __SSE2__
-        + ((buffer[3] & (1<<26)) == 0) /*SSE2*/
-#  endif
-       ;
+    size_t i;
+    for (i = 0; i < n; i++)
+    {
+        int aval = (unsigned char)a[i];
+        int bval = (unsigned char)b[i];
+        int diff;
+        if (aval >= 'a' && aval <= 'z') aval -= 'a' - 'A';
+        if (bval >= 'a' && bval <= 'z') bval -= 'a' - 'A';
+        diff = aval - bval;
+        if (diff) return diff;
+    }
+    return 0;
 }
-#else
-#include <cpuid.h>
-static inline int query_cpu_support(void)
-{
-   unsigned int eax, ebx, ecx, edx=0;
-   __get_cpuid(1, &eax, &ebx, &ecx, &edx);
-   return ((edx & 1<<25) == 0) /*SSE*/
-#ifdef __SSE2__
-        + ((edx & 1<<26) == 0) /*SSE2*/
-#endif
-       ;
-}
-#endif
-
-# endif
-#endif
