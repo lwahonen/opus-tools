@@ -77,9 +77,4 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="opusencoder.def">
-      <Filter>Source Files</Filter>
-    </None>
-  </ItemGroup>
 </Project>

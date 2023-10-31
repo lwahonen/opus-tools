@@ -77,9 +77,4 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="opusdec.def">
-      <Filter>Source Files</Filter>
-    </None>
-  </ItemGroup>
 </Project>
