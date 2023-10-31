@@ -103,8 +103,6 @@
 
 #include "getopt.h"
 
-extern FILE* stderr_pipe_handle;
-
 /* For communication from `getopt' to the caller.
    When `getopt' finds an option that takes an argument,
    the argument value is returned here.
@@ -672,7 +670,7 @@ _getopt_internal (argc, argv, optstring, longopts, longind, long_only)
       if (ambig && !exact)
 	{
 	  if (opterr)
-	    fprintf (stderr_pipe_handle, _("%s: option `%s' is ambiguous\n"),
+	    fprintf (stderr, _("%s: option `%s' is ambiguous\n"),
 		     argv[0], argv[optind]);
 	  nextchar += strlen (nextchar);
 	  optind++;
@@ -696,12 +694,12 @@ _getopt_internal (argc, argv, optstring, longopts, longind, long_only)
 		    {
 		      if (argv[optind - 1][1] == '-')
 			/* --option */
-			fprintf (stderr_pipe_handle,
+			fprintf (stderr,
 				 _("%s: option `--%s' doesn't allow an argument\n"),
 				 argv[0], pfound->name);
 		      else
 			/* +option or -option */
-			fprintf (stderr_pipe_handle,
+			fprintf (stderr,
 				 _("%s: option `%c%s' doesn't allow an argument\n"),
 				 argv[0], argv[optind - 1][0], pfound->name);
 		    }
@@ -719,7 +717,7 @@ _getopt_internal (argc, argv, optstring, longopts, longind, long_only)
 	      else
 		{
 		  if (opterr)
-		    fprintf (stderr_pipe_handle,
+		    fprintf (stderr,
 			   _("%s: option `%s' requires an argument\n"),
 			   argv[0], argv[optind - 1]);
 		  nextchar += strlen (nextchar);
@@ -749,11 +747,11 @@ _getopt_internal (argc, argv, optstring, longopts, longind, long_only)
 	    {
 	      if (argv[optind][1] == '-')
 		/* --option */
-		fprintf (stderr_pipe_handle, _("%s: unrecognized option `--%s'\n"),
+		fprintf (stderr, _("%s: unrecognized option `--%s'\n"),
 			 argv[0], nextchar);
 	      else
 		/* +option or -option */
-		fprintf (stderr_pipe_handle, _("%s: unrecognized option `%c%s'\n"),
+		fprintf (stderr, _("%s: unrecognized option `%c%s'\n"),
 			 argv[0], argv[optind][0], nextchar);
 	    }
 	  nextchar = (char *) "";
@@ -779,10 +777,10 @@ _getopt_internal (argc, argv, optstring, longopts, longind, long_only)
 	  {
 	    if (posixly_correct)
 	      /* 1003.2 specifies the format of this message.  */
-	      fprintf (stderr_pipe_handle, _("%s: illegal option -- %c\n"),
+	      fprintf (stderr, _("%s: illegal option -- %c\n"),
 		       argv[0], c);
 	    else
-	      fprintf (stderr_pipe_handle, _("%s: invalid option -- %c\n"),
+	      fprintf (stderr, _("%s: invalid option -- %c\n"),
 		       argv[0], c);
 	  }
 	optopt = c;
@@ -812,7 +810,7 @@ _getopt_internal (argc, argv, optstring, longopts, longind, long_only)
 	    if (opterr)
 	      {
 		/* 1003.2 specifies the format of this message.  */
-		fprintf (stderr_pipe_handle, _("%s: option requires an argument -- %c\n"),
+		fprintf (stderr, _("%s: option requires an argument -- %c\n"),
 			 argv[0], c);
 	      }
 	    optopt = c;
@@ -859,7 +857,7 @@ _getopt_internal (argc, argv, optstring, longopts, longind, long_only)
 	if (ambig && !exact)
 	  {
 	    if (opterr)
-	      fprintf (stderr_pipe_handle, _("%s: option `-W %s' is ambiguous\n"),
+	      fprintf (stderr, _("%s: option `-W %s' is ambiguous\n"),
 		       argv[0], argv[optind]);
 	    nextchar += strlen (nextchar);
 	    optind++;
@@ -877,7 +875,7 @@ _getopt_internal (argc, argv, optstring, longopts, longind, long_only)
 		else
 		  {
 		    if (opterr)
-		      fprintf (stderr_pipe_handle, _("\
+		      fprintf (stderr, _("\
 %s: option `-W %s' doesn't allow an argument\n"),
 			       argv[0], pfound->name);
 
@@ -892,7 +890,7 @@ _getopt_internal (argc, argv, optstring, longopts, longind, long_only)
 		else
 		  {
 		    if (opterr)
-		      fprintf (stderr_pipe_handle,
+		      fprintf (stderr,
 			       _("%s: option `%s' requires an argument\n"),
 			       argv[0], argv[optind - 1]);
 		    nextchar += strlen (nextchar);
@@ -941,7 +939,7 @@ _getopt_internal (argc, argv, optstring, longopts, longind, long_only)
 		if (opterr)
 		  {
 		    /* 1003.2 specifies the format of this message.  */
-		    fprintf (stderr_pipe_handle,
+		    fprintf (stderr,
 			   _("%s: option requires an argument -- %c\n"),
 			   argv[0], c);
 		  }

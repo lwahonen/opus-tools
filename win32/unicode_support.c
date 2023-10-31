@@ -27,15 +27,14 @@
    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
 #if defined WIN32 || defined _WIN32
+
 # include "unicode_support.h"
 
 # include <windows.h>
 # include <io.h>
 
 static UINT g_old_output_cp = ((UINT)-1);
-extern FILE* stderr_pipe_handle;
 
 char *utf16_to_utf8(const wchar_t *input)
 {
@@ -82,13 +81,17 @@ wchar_t *utf8_to_utf16(const char *input)
 	return ((Result > 0) && (Result <= BuffSize)) ? Buffer : NULL;
 }
 
-int init_commandline_arguments_utf8(int nArgs, wchar_t *szArglist[], wchar_t *wenvp[], int *argc, char ***argv)
+void init_commandline_arguments_utf8(int *argc, char ***argv)
 {
-	int i;
+	int i, nArgs;
+	LPWSTR *szArglist;
+
+	szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
+
 	if(NULL == szArglist)
 	{
-		fprintf(stderr_pipe_handle, "\nFATAL: CommandLineToArgvW failed\n\n");
-		return 0;
+		fprintf(stderr, "\nFATAL: CommandLineToArgvW failed\n\n");
+		exit(-1);
 	}
 
 	*argv = (char**) malloc(sizeof(char*) * nArgs);
@@ -96,8 +99,8 @@ int init_commandline_arguments_utf8(int nArgs, wchar_t *szArglist[], wchar_t *we
 
 	if(NULL == *argv)
 	{
-		fprintf(stderr_pipe_handle, "\nFATAL: Malloc failed\n\n");
-		return 0;
+		fprintf(stderr, "\nFATAL: Malloc failed\n\n");
+		exit(-1);
 	}
 	
 	for(i = 0; i < nArgs; i++)
@@ -105,11 +108,12 @@ int init_commandline_arguments_utf8(int nArgs, wchar_t *szArglist[], wchar_t *we
 		(*argv)[i] = utf16_to_utf8(szArglist[i]);
 		if(NULL == (*argv)[i])
 		{
-			fprintf(stderr_pipe_handle, "\nFATAL: utf16_to_utf8 failed\n\n");
-			return 0;
+			fprintf(stderr, "\nFATAL: utf16_to_utf8 failed\n\n");
+			exit(-1);
 		}
 	}
-	return 1;
+
+	LocalFree(szArglist);
 }
 
 void free_commandline_arguments_utf8(int *argc, char ***argv)

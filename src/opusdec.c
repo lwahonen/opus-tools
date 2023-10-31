@@ -26,6 +26,7 @@
    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -43,7 +44,6 @@
 
 #include <opus.h>
 #include <opusfile.h>
-FILE* stderr_pipe_handle = NULL;
 
 /*We're using this define to test for libopus 1.1 or later until libopus
   provides a better mechanism.*/
@@ -226,7 +226,7 @@ static void print_comments(const OpusTags *_tags)
 {
    int i;
    int ncomments;
-   fprintf(stderr_pipe_handle, "Encoded with %s\n", _tags->vendor);
+   fprintf(stderr, "Encoded with %s\n", _tags->vendor);
    ncomments = _tags->comments;
    for (i=0;i<ncomments;i++) {
       char *comment;
@@ -235,36 +235,36 @@ static void print_comments(const OpusTags *_tags)
          OpusPictureTag pic;
          int            err;
          err=opus_picture_tag_parse(&pic, comment);
-         fprintf(stderr_pipe_handle, "%.23s", comment);
+         fprintf(stderr, "%.23s", comment);
          if (err<0) {
-            fprintf(stderr_pipe_handle, "<error parsing picture tag>\n");
+            fprintf(stderr, "<error parsing picture tag>\n");
          } else {
-            fprintf(stderr_pipe_handle, "%u|%s|%s|%ux%ux%u", pic.type, pic.mime_type,
+            fprintf(stderr, "%u|%s|%s|%ux%ux%u", pic.type, pic.mime_type,
              pic.description, pic.width, pic.height, pic.depth);
             if (pic.colors != 0) {
-               fprintf(stderr_pipe_handle, "/%u", pic.colors);
+               fprintf(stderr, "/%u", pic.colors);
             }
             if (pic.format==OP_PIC_FORMAT_URL) {
-               fprintf(stderr_pipe_handle, "|%s\n", pic.data);
+               fprintf(stderr, "|%s\n", pic.data);
             } else {
                static const char *pic_format_str[4] = {
                   "image", "JPEG", "PNG", "GIF"
                };
                int format_idx;
                format_idx = pic.format < 1 || pic.format >= 4 ? 0 : pic.format;
-               fprintf(stderr_pipe_handle, "|<%u bytes of %s data>\n", pic.data_length,
+               fprintf(stderr, "|<%u bytes of %s data>\n", pic.data_length,
                 pic_format_str[format_idx]);
             }
             opus_picture_tag_clear(&pic);
          }
       } else {
-         fprintf(stderr_pipe_handle, "%s\n", comment);
+         fprintf(stderr, "%s\n", comment);
       }
    }
 }
 
-/* Returns 1 on success, 0 on error with message displayed on stderr_pipe_handle. */
-static int out_file_open(FILE* stdout_pipe_handle, const char *outFile, int *wav_format, int rate,
+/* Returns 1 on success, 0 on error with message displayed on stderr. */
+static int out_file_open(const char *outFile, int *wav_format, int rate,
     int mapping_family, int *channels, int fp, FILE **fout)
 {
    /* Open output file or audio playback device. */
@@ -276,7 +276,7 @@ static int out_file_open(FILE* stdout_pipe_handle, const char *outFile, int *wav
       hdl = sio_open(NULL, SIO_PLAY, 0);
       if (!hdl)
       {
-         fprintf(stderr_pipe_handle, "Cannot open sndio device\n");
+         fprintf(stderr, "Cannot open sndio device\n");
          return 0;
       }
 
@@ -288,18 +288,18 @@ static int out_file_open(FILE* stdout_pipe_handle, const char *outFile, int *wav
 
       if (!sio_setpar(hdl, &par) || !sio_getpar(hdl, &par) ||
         par.sig != 1 || par.bits != 16 || par.rate != rate) {
-         fprintf(stderr_pipe_handle, "could not set sndio parameters\n");
+         fprintf(stderr, "could not set sndio parameters\n");
          return 0;
       }
       /*We allow the channel count to be forced to stereo, but not anything
         else.*/
       if (*channels!=par.pchan && par.pchan!=2) {
-         fprintf(stderr_pipe_handle, "could not set sndio channel count\n");
+         fprintf(stderr, "could not set sndio channel count\n");
          return 0;
       }
       *channels = par.pchan;
       if (!sio_start(hdl)) {
-          fprintf(stderr_pipe_handle, "could not start sndio\n");
+          fprintf(stderr, "could not start sndio\n");
           return 0;
       }
       *fout=NULL;
@@ -326,7 +326,7 @@ static int out_file_open(FILE* stdout_pipe_handle, const char *outFile, int *wav
          * matrix with the sys/soundcard api, so we can't support
          * multichannel. We fall back to stereo downmix.
          */
-        fprintf(stderr_pipe_handle, "Cannot configure multichannel playback."
+        fprintf(stderr, "Cannot configure multichannel playback."
                         " Falling back to stereo.\n");
         *channels=2;
       }
@@ -342,7 +342,7 @@ static int out_file_open(FILE* stdout_pipe_handle, const char *outFile, int *wav
       if (stereo!=0)
       {
          if (*channels==1)
-            fprintf(stderr_pipe_handle, "Cannot set mono mode, will decode in stereo\n");
+            fprintf(stderr, "Cannot set mono mode, will decode in stereo\n");
          *channels=2;
       }
 
@@ -397,19 +397,22 @@ static int out_file_open(FILE* stdout_pipe_handle, const char *outFile, int *wav
          unsigned int opus_channels = *channels;
          if (Set_WIN_Params(INVALID_FILEDESC, rate, SAMPLE_SIZE, opus_channels))
          {
-            fprintf(stderr_pipe_handle, "Can't access %s\n", "WAVE OUT");
+            fprintf(stderr, "Can't access %s\n", "WAVE OUT");
             return 0;
          }
          *fout=NULL;
       }
 #else
-      fprintf(stderr_pipe_handle, "No soundcard support\n");
+      fprintf(stderr, "No soundcard support\n");
       return 0;
 #endif
    } else {
       if (strcmp(outFile,"-")==0)
       {
-         *fout=stdout_pipe_handle;
+#if defined WIN32 || defined _WIN32
+         _setmode(_fileno(stdout), _O_BINARY);
+#endif
+         *fout=stdout;
       }
       else
       {
@@ -425,7 +428,7 @@ static int out_file_open(FILE* stdout_pipe_handle, const char *outFile, int *wav
          *wav_format = write_wav_header(*fout, rate, mapping_family, *channels, fp);
          if (*wav_format < 0)
          {
-            fprintf(stderr_pipe_handle, "Error writing WAV header.\n");
+            fprintf(stderr, "Error writing WAV header.\n");
             fclose(*fout);
             *fout = NULL;
             return 0;
@@ -552,13 +555,13 @@ opus_int64 audio_write(float *pcm, int channels, int frame_size, FILE *fout,
        if (!file) {
          ret=WIN_Play_Samples(out, sizeof(short) * channels * out_len);
          if (ret>0) ret/=sizeof(short)*channels;
-         else fprintf(stderr_pipe_handle, "Error playing audio.\n");
+         else fprintf(stderr, "Error playing audio.\n");
        } else
 #elif defined HAVE_LIBSNDIO
        if (!file) {
          ret=sio_write(hdl, out, sizeof(short) * channels * out_len);
          if (ret>0) ret/=sizeof(short)*channels;
-         else fprintf(stderr_pipe_handle, "Error playing audio.\n");
+         else fprintf(stderr, "Error playing audio.\n");
        } else
 #endif
          ret=fwrite(fp?(char *)output:(char *)out,
@@ -666,7 +669,7 @@ static void drain_resampler(FILE *fout, int file_output,
    free(zeros);
 }
 
-int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* stdin_pipe, void* stdout_pipe, void* stderr_pipe)
+int main(int argc, char **argv)
 {
    unsigned char channel_map[OPUS_CHANNEL_COUNT_MAX];
    float clipmem[8]={0};
@@ -725,21 +728,17 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
 #endif
 
    if (query_cpu_support()) {
-     fprintf(stderr_pipe_handle,"\n\n** WARNING: This program with compiled with SSE%s\n",query_cpu_support()>1?"2":"");
-     fprintf(stderr_pipe_handle,"            but this CPU claims to lack these instructions. **\n\n");
+     fprintf(stderr,"\n\n** WARNING: This program with compiled with SSE%s\n",query_cpu_support()>1?"2":"");
+     fprintf(stderr,"            but this CPU claims to lack these instructions. **\n\n");
    }
 
 #ifdef WIN_UNICODE
-   init_commandline_arguments_utf8(wargc, wargv, wenvp, &argc_utf8, &argv_utf8);
+   (void)argc;
+   (void)argv;
+
+   init_console_utf8();
+   init_commandline_arguments_utf8(&argc_utf8, &argv_utf8);
 #endif
-   int inHandle = _open_osfhandle((long)stdin_pipe, _O_RDONLY| _O_BINARY);
-   FILE* stdin_pipe_handle = _fdopen(inHandle, "rb");
-
-   int outHandle = _open_osfhandle((long)stdout_pipe, _O_WRONLY | _O_BINARY);
-   FILE* stdout_pipe_handle = _fdopen(outHandle, "wb");
-
-   int errorHandle = _open_osfhandle((long)stderr_pipe, _O_WRONLY);
-   stderr_pipe_handle = _fdopen(errorHandle, "wb");
 
    /*Process options*/
    while (1)
@@ -848,12 +847,13 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
    {
       OpusFileCallbacks cb={NULL,NULL,NULL,NULL};
       int fd;
-
-      fd = fileno(stdin_pipe_handle);
-	  void *bin = op_fdopen(&cb, fd, "rb");
-	  cb.seek = NULL;
-	  cb.tell = NULL;
-      st=op_open_callbacks(bin, &cb, NULL, 0, NULL);
+#if defined WIN32 || defined _WIN32
+      fd = _fileno(stdin);
+      _setmode(fd, _O_BINARY);
+#else
+      fd = fileno(stdin);
+#endif
+      st=op_open_callbacks(op_fdopen(&cb, fd, "rb"), &cb, NULL, 0, NULL);
    }
    else
    {
@@ -865,7 +865,7 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
    }
    if (st==NULL)
    {
-      fprintf(stderr_pipe_handle, "Failed to open '%s'.\n", inFile);
+      fprintf(stderr, "Failed to open '%s'.\n", inFile);
       exit_code=1;
       goto done;
    }
@@ -901,7 +901,7 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
             }
             if (initial_rate!=cur_rate)
             {
-               fprintf(stderr_pipe_handle,
+               fprintf(stderr,
                 "Warning: Chained stream with multiple input sample rates: "
                 "forcing decode to 48 kHz.\n");
                rate=48000;
@@ -918,7 +918,7 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
             cur_channels = op_head(st, li)->channel_count;
             if (initial_channels!=cur_channels)
             {
-               fprintf(stderr_pipe_handle,
+               fprintf(stderr,
                 "Warning: Chained stream with multiple channel counts: "
                 "forcing decode to stereo.\n");
                force_stereo=1;
@@ -943,7 +943,7 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
    }
    if (rate<8000||rate>192000)
    {
-      fprintf(stderr_pipe_handle,
+      fprintf(stderr,
        "Warning: Crazy input_rate %d, decoding to 48000 instead.\n", rate);
       rate=48000;
       force_rate=1;
@@ -955,8 +955,8 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
       if (!frange)
       {
          perror(rangeFile);
-         fprintf(stderr_pipe_handle,"Could not open save-range file: %s\n",rangeFile);
-         fprintf(stderr_pipe_handle,"Must provide a writable file name.\n");
+         fprintf(stderr,"Could not open save-range file: %s\n",rangeFile);
+         fprintf(stderr,"Must provide a writable file name.\n");
          exit_code=1;
          goto done;
       }
@@ -965,7 +965,7 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
    requested_channels=force_stereo?2:head->channel_count;
    /*TODO: For seekable sources, write the output length in the WAV header.*/
    channels=requested_channels;
-   if (!out_file_open(stdout_pipe_handle, outFile, &wav_format, rate, head->mapping_family,
+   if (!out_file_open(outFile, &wav_format, rate, head->mapping_family,
         &channels, fp, &fout))
    {
       exit_code=1;
@@ -983,7 +983,7 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
    permuted_output=NULL;
    if (!shapemem.a_buf || !shapemem.b_buf || !output)
    {
-      fprintf(stderr_pipe_handle, "Memory allocation failure.\n");
+      fprintf(stderr, "Memory allocation failure.\n");
       exit_code=1;
       goto cleanup;
    }
@@ -999,7 +999,7 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
       permuted_output=malloc(sizeof(float)*MAX_FRAME_SIZE*channels);
       if (!permuted_output)
       {
-         fprintf(stderr_pipe_handle, "Memory allocation failure.\n");
+         fprintf(stderr, "Memory allocation failure.\n");
          exit_code=1;
          goto cleanup;
       }
@@ -1032,10 +1032,10 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
       if (nb_read<0) {
          if (nb_read==OP_HOLE) {
             /*TODO: At...?*/
-            fprintf(stderr_pipe_handle, "Warning: Hole in data.\n");
+            fprintf(stderr, "Warning: Hole in data.\n");
             continue;
          } else {
-            fprintf(stderr_pipe_handle, "Decoding error.\n");
+            fprintf(stderr, "Decoding error.\n");
             exit_code=1;
             break;
          }
@@ -1044,8 +1044,8 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
       {
          if (!quiet)
          {
-            fprintf(stderr_pipe_handle, "\rDecoding complete.        \n");
-            fflush(stderr_pipe_handle);
+            fprintf(stderr, "\rDecoding complete.        \n");
+            fflush(stderr);
          }
          break;
       }
@@ -1074,7 +1074,7 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
               remaining links, but we've already decoded the first packet, and
               this stream is unseekable, so we'd have to write our own downmix
               code. That's more trouble than it's worth.*/
-            fprintf(stderr_pipe_handle,
+            fprintf(stderr,
              "Error: channel count changed in a chained stream: "
              "aborting.\n");
             exit_code=1;
@@ -1084,7 +1084,7 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
           && (opus_uint32)rate!=
           (head->input_sample_rate==0?48000:head->input_sample_rate))
          {
-            fprintf(stderr_pipe_handle,
+            fprintf(stderr,
              "Warning: input sampling rate changed in a chained stream: "
              "resampling remaining links to %d. Use --rate to override.\n",
              rate);
@@ -1094,22 +1094,22 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
             if (old_li >= 0)
             {
                /*Clear the progress indicator from the previous link.*/
-               fprintf(stderr_pipe_handle, "\r");
+               fprintf(stderr, "\r");
             }
-            fprintf(stderr_pipe_handle, "Decoding to %d Hz (%d %s)", rate,
+            fprintf(stderr, "Decoding to %d Hz (%d %s)", rate,
               channels, channels>1?"channels":"channel");
             if (head->version!=1)
             {
-               fprintf(stderr_pipe_handle, ", Header v%d",head->version);
+               fprintf(stderr, ", Header v%d",head->version);
             }
-            fprintf(stderr_pipe_handle, "\n");
+            fprintf(stderr, "\n");
             if (head->output_gain!=0)
             {
-               fprintf(stderr_pipe_handle,"Playback gain: %f dB\n", head->output_gain/256.);
+               fprintf(stderr,"Playback gain: %f dB\n", head->output_gain/256.);
             }
             if (manual_gain!=0)
             {
-               fprintf(stderr_pipe_handle,"Manual gain: %f dB\n", manual_gain);
+               fprintf(stderr,"Manual gain: %f dB\n", manual_gain);
             }
             print_comments(op_tags(st, li));
          }
@@ -1128,10 +1128,10 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
                last_spin++;
                last_coded_seconds = coded_seconds;
             }
-            fprintf(stderr_pipe_handle,"\r[%c] %02" I64FORMAT ":%02d:%02d",
+            fprintf(stderr,"\r[%c] %02" I64FORMAT ":%02d:%02d",
              spinner[last_spin&3], coded_seconds/3600,
              (int)((coded_seconds/60)%60), (int)(coded_seconds%60));
-            fflush(stderr_pipe_handle);
+            fflush(stderr);
          }
       }
       old_li=li;
@@ -1157,7 +1157,7 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
          resampler = speex_resampler_init(channels, 48000, rate, 5, &err);
          if (err!=0)
          {
-            fprintf(stderr_pipe_handle, "resampler error: %s\n",
+            fprintf(stderr, "resampler error: %s\n",
              speex_resampler_strerror(err));
          }
          speex_resampler_skip_zeros(resampler);
@@ -1179,7 +1179,7 @@ int __cdecl opusdec_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* s
    /*If we were writing wav, go set the duration.*/
    if (fout && wav_format>0 && update_wav_header(fout, wav_format, audio_size)<0)
    {
-      fprintf(stderr_pipe_handle, "Warning: Cannot update audio size in output file;"
+      fprintf(stderr, "Warning: Cannot update audio size in output file;"
          " size will be incorrect.\n");
    }
 
@@ -1199,6 +1199,7 @@ done:
    if (st) op_free(st);
 #ifdef WIN_UNICODE
    free_commandline_arguments_utf8(&argc_utf8, &argv_utf8);
+   uninit_console_utf8();
 #endif
    return exit_code;
 }

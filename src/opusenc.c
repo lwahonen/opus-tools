@@ -93,15 +93,13 @@
 # define FORMAT_PRINTF
 #endif
 
-FILE* stderr_pipe_handle = NULL;
-
 static void fatal(const char *format, ...) FORMAT_PRINTF;
 
 static void fatal(const char *format, ...)
 {
   va_list ap;
   va_start(ap, format);
-  vfprintf(stderr_pipe_handle, format, ap);
+  vfprintf(stderr, format, ap);
   va_end(ap);
   exit(1);
 }
@@ -243,15 +241,15 @@ static inline void print_time(double seconds)
   minutes=(opus_int64)(seconds/60);
   seconds-=minutes*60.;
   if (hours) {
-    fprintf(stderr_pipe_handle, " %" I64FORMAT " hour%s%s", hours, hours!=1 ? "s" : "",
+    fprintf(stderr, " %" I64FORMAT " hour%s%s", hours, hours!=1 ? "s" : "",
       minutes && seconds>0 ? "," : minutes || seconds>0 ? " and" : "");
   }
   if (minutes) {
-    fprintf(stderr_pipe_handle, " %" I64FORMAT " minute%s%s", minutes, minutes!=1 ? "s" : "",
+    fprintf(stderr, " %" I64FORMAT " minute%s%s", minutes, minutes!=1 ? "s" : "",
       seconds>0 ? (hours ? ", and" : " and") : "");
   }
   if (seconds>0 || (!hours && !minutes)) {
-    fprintf(stderr_pipe_handle, " %0.4g second%s", seconds, seconds!=1 ? "s" : "");
+    fprintf(stderr, " %0.4g second%s", seconds, seconds!=1 ? "s" : "");
   }
 }
 
@@ -362,7 +360,7 @@ static void validate_ambisonics_channel_count(int num_channels)
   if(nondiegetic_chs!=0&&nondiegetic_chs!=2) fatal("Error: invalid number of ambisonics channels.\n");
 }
 
-int opusencoder_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* stdin_pipe, void* stdout_pipe, void* stderr_pipe)
+int main(int argc, char **argv)
 {
   static const input_format raw_format = {NULL, 0, raw_open, wav_close, "raw",N_("RAW file reader")};
   struct option long_options[] =
@@ -458,22 +456,17 @@ int opusencoder_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* stdin
   int argc_utf8;
   char **argv_utf8;
 #endif
-  int inHandle = _open_osfhandle((void*) stdin_pipe, _O_RDONLY);
-  FILE* stdin_pipe_handle = _fdopen(inHandle, "rb");
-
-  int outHandle = _open_osfhandle((void*)stdout_pipe, _O_WRONLY);
-  FILE* stdout_pipe_handle = _fdopen(outHandle, "wb");
-
-  int errorHandle = _open_osfhandle((void*)stderr_pipe, _O_WRONLY);
-  stderr_pipe_handle = _fdopen(errorHandle, "wb");
 
   if (query_cpu_support()) {
-    fprintf(stderr_pipe_handle,"\n\n** WARNING: This program was compiled with SSE%s\n",query_cpu_support()>1?"2":"");
-    fprintf(stderr_pipe_handle,"            but this CPU claims to lack these instructions. **\n\n");
+    fprintf(stderr,"\n\n** WARNING: This program was compiled with SSE%s\n",query_cpu_support()>1?"2":"");
+    fprintf(stderr,"            but this CPU claims to lack these instructions. **\n\n");
   }
 
 #ifdef WIN_UNICODE
-  init_commandline_arguments_utf8(wargc, wargv, wenvp, &argc_utf8, &argv_utf8);
+  (void)argc;
+  (void)argv;
+
+  init_commandline_arguments_utf8(&argc_utf8, &argv_utf8);
 #endif
 
   opt_ctls_ctlval=NULL;
@@ -849,7 +842,12 @@ int opusencoder_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* stdin
   }
 
   if (strcmp(inFile, "-")==0) {
-    fin= stdin_pipe_handle;
+#if defined WIN32 || defined _WIN32
+    _setmode(_fileno(stdin), _O_BINARY);
+#elif defined OS2
+    _fsetmode(stdin,"b");
+#endif
+    fin=stdin;
   } else {
     fin=fopen_utf8(inFile, "rb");
     if (!fin) {
@@ -885,7 +883,7 @@ int opusencoder_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* stdin
 
   if (inopt.channels_format==CHANNELS_FORMAT_DEFAULT) {
     if (downmix==0&&inopt.channels>2&&bitrate>0&&bitrate<(16000*inopt.channels)) {
-      if (!quiet) fprintf(stderr_pipe_handle,"Notice: Surround bitrate less than 16 kbit/s per channel, downmixing.\n");
+      if (!quiet) fprintf(stderr,"Notice: Surround bitrate less than 16 kbit/s per channel, downmixing.\n");
       downmix=inopt.channels>8?1:2;
     }
   }
@@ -994,18 +992,18 @@ int opusencoder_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* stdin
 #ifdef OPUS_SET_LSB_DEPTH
   ret = ope_encoder_ctl(enc, OPUS_SET_LSB_DEPTH(IMAX(8,IMIN(24,inopt.samplesize))));
   if (ret != OPE_OK) {
-    fprintf(stderr_pipe_handle, "Warning: OPUS_SET_LSB_DEPTH failed: %s\n", ope_strerror(ret));
+    fprintf(stderr, "Warning: OPUS_SET_LSB_DEPTH failed: %s\n", ope_strerror(ret));
   }
 #endif
   if (no_phase_inv) {
 #ifdef OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST
     ret = ope_encoder_ctl(enc, OPUS_SET_PHASE_INVERSION_DISABLED(1));
     if (ret != OPE_OK) {
-      fprintf(stderr_pipe_handle, "Warning: OPUS_SET_PHASE_INVERSION_DISABLED failed: %s\n",
+      fprintf(stderr, "Warning: OPUS_SET_PHASE_INVERSION_DISABLED failed: %s\n",
         ope_strerror(ret));
     }
 #else
-    fprintf(stderr_pipe_handle,"Warning: Disabling phase inversion is not supported.\n");
+    fprintf(stderr,"Warning: Disabling phase inversion is not supported.\n");
 #endif
   }
 
@@ -1044,33 +1042,36 @@ int opusencoder_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* stdin
 
   if (!quiet) {
     int opus_app;
-    fprintf(stderr_pipe_handle,"Encoding using %s",opus_version);
+    fprintf(stderr,"Encoding using %s",opus_version);
     ret = ope_encoder_ctl(enc, OPUS_GET_APPLICATION(&opus_app));
-    if (ret != OPE_OK) fprintf(stderr_pipe_handle, "\n");
-    else if (opus_app==OPUS_APPLICATION_VOIP) fprintf(stderr_pipe_handle," (VoIP)\n");
-    else if (opus_app==OPUS_APPLICATION_AUDIO) fprintf(stderr_pipe_handle," (audio)\n");
-    else if (opus_app==OPUS_APPLICATION_RESTRICTED_LOWDELAY) fprintf(stderr_pipe_handle," (low-delay)\n");
-    else fprintf(stderr_pipe_handle," (unknown application)\n");
-    fprintf(stderr_pipe_handle,"-----------------------------------------------------\n");
-    fprintf(stderr_pipe_handle,"   Input: %0.6g kHz, %d channel%s\n",
+    if (ret != OPE_OK) fprintf(stderr, "\n");
+    else if (opus_app==OPUS_APPLICATION_VOIP) fprintf(stderr," (VoIP)\n");
+    else if (opus_app==OPUS_APPLICATION_AUDIO) fprintf(stderr," (audio)\n");
+    else if (opus_app==OPUS_APPLICATION_RESTRICTED_LOWDELAY) fprintf(stderr," (low-delay)\n");
+    else fprintf(stderr," (unknown application)\n");
+    fprintf(stderr,"-----------------------------------------------------\n");
+    fprintf(stderr,"   Input: %0.6g kHz, %d channel%s\n",
             rate/1000.,chan,chan<2?"":"s");
-    fprintf(stderr_pipe_handle,"  Output: %d channel%s (",chan,chan<2?"":"s");
-    if (data.nb_coupled>0) fprintf(stderr_pipe_handle,"%d coupled",data.nb_coupled*2);
-    if (data.nb_streams-data.nb_coupled>0) fprintf(stderr_pipe_handle,
+    fprintf(stderr,"  Output: %d channel%s (",chan,chan<2?"":"s");
+    if (data.nb_coupled>0) fprintf(stderr,"%d coupled",data.nb_coupled*2);
+    if (data.nb_streams-data.nb_coupled>0) fprintf(stderr,
        "%s%d uncoupled",data.nb_coupled>0?", ":"",
        data.nb_streams-data.nb_coupled);
-    fprintf(stderr_pipe_handle,")\n          %0.2gms packets, %0.6g kbit/s%s\n",
+    fprintf(stderr,")\n          %0.2gms packets, %0.6g kbit/s%s\n",
        frame_size/(48000/1000.), bitrate/1000.,
        with_hard_cbr?" CBR":with_cvbr?" CVBR":" VBR");
-    fprintf(stderr_pipe_handle," Preskip: %d\n",lookahead);
+    fprintf(stderr," Preskip: %d\n",lookahead);
     if (data.frange!=NULL) {
-      fprintf(stderr_pipe_handle, "          Writing final range file %s\n", range_file);
+      fprintf(stderr, "          Writing final range file %s\n", range_file);
     }
-    fprintf(stderr_pipe_handle,"\n");
+    fprintf(stderr,"\n");
   }
 
   if (strcmp(outFile,"-")==0) {
-    data.fout= stdout_pipe_handle;
+#if defined WIN32 || defined _WIN32
+    _setmode(_fileno(stdout), _O_BINARY);
+#endif
+    data.fout=stdout;
   } else {
     data.fout=fopen_utf8(outFile, "wb");
     if (!data.fout) {
@@ -1107,8 +1108,8 @@ int opusencoder_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* stdin
           estbitrate=(data.total_bytes*8.0/coded_seconds)*tweight+
                       bitrate*(1.-tweight);
         }
-        fprintf(stderr_pipe_handle,"\r");
-        for (i=0;i<last_spin_len;i++) fprintf(stderr_pipe_handle," ");
+        fprintf(stderr,"\r");
+        for (i=0;i<last_spin_len;i++) fprintf(stderr," ");
         if (inopt.total_samples_per_channel>0 &&
             data.nb_encoded<inopt.total_samples_per_channel+lookahead) {
           snprintf(sbuf,54,"\r[%c] %2d%% ",spinner[last_spin&3],
@@ -1124,8 +1125,8 @@ int opusencoder_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* stdin
           (int)(coded_seconds)%60,(int)(coded_seconds*100)%100,
           coded_seconds/(wall_time>0?wall_time:1e-6),
           estbitrate/1000.);
-        fprintf(stderr_pipe_handle,"%s",sbuf);
-        fflush(stderr_pipe_handle);
+        fprintf(stderr,"%s",sbuf);
+        fflush(stderr);
         last_spin_len=(int)strlen(sbuf);
         last_spin=stop_time;
       }
@@ -1133,9 +1134,9 @@ int opusencoder_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* stdin
   }
 
   if (last_spin_len) {
-    fprintf(stderr_pipe_handle,"\r");
-    for (i=0;i<last_spin_len;i++) fprintf(stderr_pipe_handle," ");
-    fprintf(stderr_pipe_handle,"\r");
+    fprintf(stderr,"\r");
+    for (i=0;i<last_spin_len;i++) fprintf(stderr," ");
+    fprintf(stderr,"\r");
   }
 
   if (ret == OPE_OK) ret = ope_encoder_drain(enc);
@@ -1145,31 +1146,31 @@ int opusencoder_wmain(int wargc, wchar_t *wargv[], wchar_t *wenvp[], void* stdin
   if (!quiet) {
     double coded_seconds=data.nb_encoded/48000.;
     double wall_time=(double)(stop_time-start_time);
-    fprintf(stderr_pipe_handle,"Encoding complete\n");
-    fprintf(stderr_pipe_handle,"-----------------------------------------------------\n");
-    fprintf(stderr_pipe_handle,"       Encoded:");
+    fprintf(stderr,"Encoding complete\n");
+    fprintf(stderr,"-----------------------------------------------------\n");
+    fprintf(stderr,"       Encoded:");
     print_time(coded_seconds);
-    fprintf(stderr_pipe_handle,"\n       Runtime:");
+    fprintf(stderr,"\n       Runtime:");
     print_time(wall_time);
-    fprintf(stderr_pipe_handle,"\n");
+    fprintf(stderr,"\n");
     if (wall_time>0) {
-      fprintf(stderr_pipe_handle,"                (%0.4gx realtime)\n",coded_seconds/wall_time);
+      fprintf(stderr,"                (%0.4gx realtime)\n",coded_seconds/wall_time);
     }
-    fprintf(stderr_pipe_handle,"         Wrote: %" I64FORMAT " bytes, %" I64FORMAT " packets, "
+    fprintf(stderr,"         Wrote: %" I64FORMAT " bytes, %" I64FORMAT " packets, "
       "%" I64FORMAT " pages\n",data.bytes_written,data.packets_out,data.pages_out);
     if (data.nb_encoded>0) {
-      fprintf(stderr_pipe_handle,"       Bitrate: %0.6g kbit/s (without overhead)\n",
+      fprintf(stderr,"       Bitrate: %0.6g kbit/s (without overhead)\n",
               data.total_bytes*8.0/(coded_seconds)/1000.0);
-      fprintf(stderr_pipe_handle," Instant rates: %0.6g to %0.6g kbit/s\n"
+      fprintf(stderr," Instant rates: %0.6g to %0.6g kbit/s\n"
                      "                (%d to %d bytes per packet)\n",
               data.min_bytes*(8*48000./frame_size/1000.),
               data.peak_bytes*(8*48000./frame_size/1000.),data.min_bytes,data.peak_bytes);
     }
     if (data.bytes_written>0) {
-      fprintf(stderr_pipe_handle,"      Overhead: %0.3g%% (container+metadata)\n",
+      fprintf(stderr,"      Overhead: %0.3g%% (container+metadata)\n",
         (data.bytes_written-data.total_bytes)/(double)data.bytes_written*100.);
     }
-    fprintf(stderr_pipe_handle,"\n");
+    fprintf(stderr,"\n");
   }
 
   ope_encoder_destroy(enc);
