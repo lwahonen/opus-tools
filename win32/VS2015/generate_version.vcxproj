@@ -9,7 +9,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{77C41C23-C4D0-4B86-9E1B-16BCD80FC0CA}</ProjectGuid>
     <RootNamespace>generate_version</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Any|Win32'" Label="Configuration">

@@ -47,7 +47,7 @@
     <Keyword>Win32Proj</Keyword>
     <ProjectName>opusencoder</ProjectName>
     <ProjectGuid>{02C9F2A5-2FE3-B16A-D0E1-FCAAEFC3B855}</ProjectGuid>
-    <WindowsTargetPlatformVersion>7.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -94,8 +94,39 @@
     <Import Project="common.props" />
     <Import Project="opus-tools.props" />
   </ImportGroup>
-  <ItemDefinitionGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Link>
+      <AdditionalDependencies>opus.lib;libogg.lib;opusenc.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Link>
+      <AdditionalDependencies>opus.lib;libogg.lib;opusenc.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Link>
+      <AdditionalDependencies>opus.lib;libogg.lib;opusenc.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Link>
+      <AdditionalDependencies>opus.lib;libogg.lib;opusenc.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LibraryPath>C:\libraries\opusfile\win32\VS2015\x64\Debug;C:\libraries\opus\bin\build64\Debug;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LibraryPath>C:\libraries\opus\bin\build64\Release;C:\libraries\opusfile\win32\VS2015\x64\Release-NoHTTP;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LibraryPath>C:\libraries\opusfile\win32\VS2015\Win32\Release-NoHTTP;C:\libraries\opus\bin\build32\Release;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LibraryPath>C:\libraries\opusfile\win32\VS2015\Win32\Debug;C:\libraries\opus\bin\build32\Debug;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>

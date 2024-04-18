@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27703.2026
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34031.279
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opusdec", "opusdec.vcxproj", "{F2434089-C12F-D049-6D5E-19E75E1C68D2}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -11,8 +11,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "generate_version", "generate_version.vcxproj", "{77C41C23-C4D0-4B86-9E1B-16BCD80FC0CA}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opusencoder", "opusencoder.vcxproj", "{02C9F2A5-2FE3-B16A-D0E1-FCAAEFC3B855}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tester", "..\tester\tester.vcxproj", "{9385A667-DD20-4DE8-BFC3-1079EEDA782A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -46,14 +44,6 @@ Global
 		{02C9F2A5-2FE3-B16A-D0E1-FCAAEFC3B855}.Release|Win32.Build.0 = Release|Win32
 		{02C9F2A5-2FE3-B16A-D0E1-FCAAEFC3B855}.Release|x64.ActiveCfg = Release|x64
 		{02C9F2A5-2FE3-B16A-D0E1-FCAAEFC3B855}.Release|x64.Build.0 = Release|x64
-		{9385A667-DD20-4DE8-BFC3-1079EEDA782A}.Debug|Win32.ActiveCfg = Debug|Win32
-		{9385A667-DD20-4DE8-BFC3-1079EEDA782A}.Debug|Win32.Build.0 = Debug|Win32
-		{9385A667-DD20-4DE8-BFC3-1079EEDA782A}.Debug|x64.ActiveCfg = Debug|x64
-		{9385A667-DD20-4DE8-BFC3-1079EEDA782A}.Debug|x64.Build.0 = Debug|x64
-		{9385A667-DD20-4DE8-BFC3-1079EEDA782A}.Release|Win32.ActiveCfg = Release|Win32
-		{9385A667-DD20-4DE8-BFC3-1079EEDA782A}.Release|Win32.Build.0 = Release|Win32
-		{9385A667-DD20-4DE8-BFC3-1079EEDA782A}.Release|x64.ActiveCfg = Release|x64
-		{9385A667-DD20-4DE8-BFC3-1079EEDA782A}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
