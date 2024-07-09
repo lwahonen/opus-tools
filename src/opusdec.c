@@ -104,6 +104,8 @@
 #include "stack_alloc.h"
 #include "cpusupport.h"
 
+BOOL flush_always = FALSE;
+
 /* printf format specifier for opus_int64 */
 #if !defined opus_int64 && defined PRId64
 # define I64FORMAT PRId64
@@ -411,6 +413,7 @@ static int out_file_open(const char *outFile, int *wav_format, int rate,
       {
 #if defined WIN32 || defined _WIN32
          _setmode(_fileno(stdout), _O_BINARY);
+         flush_always = TRUE;
 #endif
          *fout=stdout;
       }
@@ -564,8 +567,12 @@ opus_int64 audio_write(float *pcm, int channels, int frame_size, FILE *fout,
          else fprintf(stderr, "Error playing audio.\n");
        } else
 #endif
-         ret=fwrite(fp?(char *)output:(char *)out,
-          (fp?sizeof(float):sizeof(short))*channels, out_len, fout);
+        ret = fwrite(fp ? (char*)output : (char*)out,
+        (fp ? sizeof(float) : sizeof(short)) * channels, out_len, fout);
+       if (flush_always == TRUE)
+       {
+           fflush(fout);
+       }
        sampout+=ret;
        maxout-=ret;
      }
