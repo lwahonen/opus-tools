@@ -21,8 +21,9 @@
 #endif
 #endif
 
+#ifndef _M_ARM64
 #define __SSE__
-
+#endif
 #define RANDOM_PREFIX opustools
 
 #define PACKAGE_NAME "opus-tools"
