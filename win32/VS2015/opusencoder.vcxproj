@@ -155,10 +155,10 @@
   </ItemDefinitionGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LibraryPath>C:\libraries\opusfile\win32\VS2015\arm64\Debug;C:\libraries\opus\bin\buildarm\Debug;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\libraries\opusfile\win32\VS2015\x64\Debug;C:\libraries\opus\bin\build64\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <LibraryPath>C:\libraries\opusfile\win32\VS2015\x64\Debug;C:\libraries\opus\bin\build64\Debug;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\libraries\opusfile\win32\VS2015\ARM64\Debug;C:\libraries\opus\bin\buildarm\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LibraryPath>C:\libraries\opus\bin\build64\Release;C:\libraries\opusfile\win32\VS2015\x64\Release-NoHTTP;$(LibraryPath)</LibraryPath>
