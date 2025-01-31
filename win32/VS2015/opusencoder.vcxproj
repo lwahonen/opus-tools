@@ -127,16 +127,25 @@
     <Link>
       <AdditionalDependencies>opus.lib;libogg.lib;opusenc.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ClCompile>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <Link>
       <AdditionalDependencies>opus.lib;libogg.lib;opusenc.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ClCompile>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Link>
       <AdditionalDependencies>opus.lib;libogg.lib;opusenc.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ClCompile>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Link>
