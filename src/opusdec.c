@@ -864,11 +864,8 @@ int main(int argc, char **argv)
    }
    else
    {
-      st=op_open_url(inFile,NULL,NULL);
-      if (st==NULL)
-      {
-         st=op_open_file(inFile,NULL);
-      }
+      /* Skip op_open_url since opusfile was built without HTTP support */
+      st=op_open_file(inFile,NULL);
    }
    if (st==NULL)
    {
