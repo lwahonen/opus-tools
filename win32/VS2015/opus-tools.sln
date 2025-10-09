@@ -11,6 +11,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "generate_version", "generate_version.vcxproj", "{77C41C23-C4D0-4B86-9E1B-16BCD80FC0CA}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opusencoder", "opusencoder.vcxproj", "{02C9F2A5-2FE3-B16A-D0E1-FCAAEFC3B855}"
+	ProjectSection(ProjectDependencies) = postProject
+		{77C41C23-C4D0-4B86-9E1B-16BCD80FC0CA} = {77C41C23-C4D0-4B86-9E1B-16BCD80FC0CA}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
