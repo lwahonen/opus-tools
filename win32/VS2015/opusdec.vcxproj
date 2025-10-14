@@ -132,7 +132,7 @@
   </ImportGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Link>
-      <AdditionalDependencies>opus.lib;libogg.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opus.lib;ogg.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -141,7 +141,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Link>
-      <AdditionalDependencies>opus.lib;libogg.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opus.lib;ogg.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -149,7 +149,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Link>
-      <AdditionalDependencies>opus.lib;libogg.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opus.lib;ogg.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -157,7 +157,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <Link>
-      <AdditionalDependencies>opus.lib;libogg.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opus.lib;ogg.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -165,7 +165,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Link>
-      <AdditionalDependencies>opus.lib;libogg.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opus.lib;ogg.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -174,7 +174,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <Link>
-      <AdditionalDependencies>opus.lib;libogg.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opus.lib;ogg.lib;opusfile.lib;ws2_32.lib;crypt32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -183,22 +183,22 @@
   </ItemDefinitionGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LibraryPath>C:\libraries\opusfile\bin\debug64\lib;C:\libraries\opus\bin\debug64\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>..\..\..\opusfile\bin\debug64\lib;..\..\..\opus\bin\debug64\lib;..\..\..\ogg\bin\debug64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <LibraryPath>C:\libraries\opusfile\bin\debugarm\lib;C:\libraries\opus\bin\debugarm\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>..\..\..\opusfile\bin\debugarm\lib;..\..\..\opus\bin\debugarm\lib;..\..\..\ogg\bin\debugarm\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LibraryPath>C:\libraries\opusfile\bin\release32\lib;C:\libraries\opus\bin\release32\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>..\..\..\opusfile\bin\release32\lib;..\..\..\opus\bin\release32\lib;..\..\..\ogg\bin\release32\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LibraryPath>C:\libraries\opus\bin\release64\lib;C:\libraries\opusfile\bin\release64\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>..\..\..\opus\bin\release64\lib;..\..\..\opusfile\bin\release64\lib;..\..\..\ogg\bin\release64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
-    <LibraryPath>C:\libraries\opus\bin\releasearm\lib;C:\libraries\opusfile\bin\releasearm\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>..\..\..\opus\bin\releasearm\lib;..\..\..\opusfile\bin\releasearm\lib;..\..\..\ogg\bin\releasearm\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LibraryPath>C:\libraries\opusfile\bin\debug32\lib;C:\libraries\opus\bin\debug32\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>..\..\..\opusfile\bin\debug32\lib;..\..\..\opus\bin\debug32\lib;..\..\..\ogg\bin\debug32\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
