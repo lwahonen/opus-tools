@@ -52,7 +52,9 @@
 #endif
 
 #ifdef _MSC_VER
-# define snprintf _snprintf
+# if (_MSC_VER < 1900)
+#  define snprintf _snprintf
+# endif
 #endif
 
 #if defined WIN32 || defined _WIN32
@@ -145,7 +147,11 @@ static void usage(void)
   printf(" --speech           Tune low bitrates for speech (override automatic detection)\n");
   printf(" --comp n           Set encoding complexity (0-10, default: 10 (slowest))\n");
   printf(" --framesize n      Set maximum frame size in milliseconds\n");
+#ifdef OPUS_FRAMESIZE_120_MS
+  printf("                      (2.5, 5, 10, 20, 40, 60, 80, 100, 120, default: 20)\n");
+#else
   printf("                      (2.5, 5, 10, 20, 40, 60, default: 20)\n");
+#endif
   printf(" --expect-loss n    Set expected packet loss in percent (default: 0)\n");
   printf(" --downmix-mono     Downmix to mono\n");
   printf(" --downmix-stereo   Downmix to stereo (if >2 channels)\n");
@@ -340,6 +346,9 @@ static int is_valid_ctl(int request)
 #ifdef OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST
   case OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST:
 #endif
+#ifdef OPUS_SET_QEXT_REQUEST
+  case OPUS_SET_QEXT_REQUEST:
+#endif
   case OPE_SET_DECISION_DELAY_REQUEST:
   case OPE_SET_MUXING_DELAY_REQUEST:
   case OPE_SET_COMMENT_PADDING_REQUEST:
@@ -355,7 +364,7 @@ static void validate_ambisonics_channel_count(int num_channels)
   int order_plus_one;
   int nondiegetic_chs;
   if(num_channels<1||num_channels>227) fatal("Error: the number of channels must not be <1 or >227.\n");
-  order_plus_one=sqrt(num_channels);
+  order_plus_one=(int)sqrt(num_channels);
   nondiegetic_chs=num_channels-order_plus_one*order_plus_one;
   if(nondiegetic_chs!=0&&nondiegetic_chs!=2) fatal("Error: invalid number of ambisonics channels.\n");
 }
@@ -382,7 +391,7 @@ int main(int argc, char **argv)
 {
   static const input_format raw_format =
   {
-    NULL, 0, raw_open, wav_close, "Raw", N_("Raw file reader")
+    NULL, 0, raw_open, wav_close, "Raw"
   };
   struct option long_options[] =
   {
@@ -446,7 +455,7 @@ int main(int argc, char **argv)
   FILE               *fin;
   char               ENCODER_string[1024];
   /*Counters*/
-  opus_int32         nb_samples;
+  int                nb_samples;
   time_t             start_time;
   time_t             stop_time;
   time_t             last_spin=0;
@@ -455,7 +464,7 @@ int main(int argc, char **argv)
   int                quiet=0;
   opus_int32         bitrate=-1;
   opus_int32         rate=48000;
-  opus_int32         frame_size=960;
+  int                frame_size=960;
   opus_int32         opus_frame_param = OPUS_FRAMESIZE_20_MS;
   int                chan=2;
   int                with_hard_cbr=0;
@@ -467,10 +476,10 @@ int main(int argc, char **argv)
   int                no_phase_inv=0;
   int                *opt_ctls_ctlval;
   int                opt_ctls=0;
-  int                max_ogg_delay=48000; /*48kHz samples*/
+  opus_int32         max_ogg_delay=48000; /*48kHz samples*/
   int                seen_file_icons=0;
   int                comment_padding=512;
-  int                serialno;
+  opus_int32         serialno;
   opus_int32         lookahead=0;
   int                mapping_family;
   int                orig_channels;
@@ -609,6 +618,7 @@ int main(int argc, char **argv)
           inopt.rawmode=1;
           inopt.rawmode_f=1;
           inopt.samplesize=32;
+          save_cmd=0;
         } else if (strcmp(optname, "downmix-mono")==0) {
           downmix=1;
         } else if (strcmp(optname, "downmix-stereo")==0) {
@@ -641,9 +651,18 @@ int main(int argc, char **argv)
           else if (strcmp(optarg,"20")==0) opus_frame_param=OPUS_FRAMESIZE_20_MS;
           else if (strcmp(optarg,"40")==0) opus_frame_param=OPUS_FRAMESIZE_40_MS;
           else if (strcmp(optarg,"60")==0) opus_frame_param=OPUS_FRAMESIZE_60_MS;
+#ifdef OPUS_FRAMESIZE_120_MS
+          else if (strcmp(optarg,"80")==0) opus_frame_param=OPUS_FRAMESIZE_80_MS;
+          else if (strcmp(optarg,"100")==0) opus_frame_param=OPUS_FRAMESIZE_100_MS;
+          else if (strcmp(optarg,"120")==0) opus_frame_param=OPUS_FRAMESIZE_120_MS;
+#endif
           else {
             fatal("Invalid framesize: %s\n"
+#ifdef OPUS_FRAMESIZE_120_MS
+              "Value is in milliseconds and must be 2.5, 5, 10, 20, 40, 60, 80, 100 or 120.\n",
+#else
               "Value is in milliseconds and must be 2.5, 5, 10, 20, 40, or 60.\n",
+#endif
               optarg);
           }
           frame_size = opus_frame_param <= OPUS_FRAMESIZE_40_MS
@@ -656,7 +675,7 @@ int main(int argc, char **argv)
               "Value is in milliseconds and must be in the range 0 to 1000.\n",
               optarg);
           }
-          max_ogg_delay=(int)floor(val*48.);
+          max_ogg_delay=(opus_int32)floor(val*48.);
         } else if (strcmp(optname, "channels")==0) {
           if (strcmp(optarg, "ambix")==0) {
             inopt.channels_format=CHANNELS_FORMAT_AMBIX;
@@ -667,8 +686,10 @@ int main(int argc, char **argv)
               "--channels only supports 'ambix' or 'discrete'\n",
               optarg);
           }
+          save_cmd=0;
         } else if (strcmp(optname, "serial")==0) {
           serialno=atoi(optarg);
+          save_cmd=0;
         } else if (strcmp(optname, "set-ctl-int")==0) {
           int target,request;
           char *spos,*tpos;
@@ -801,11 +822,14 @@ int main(int argc, char **argv)
           if (picture_type>=1&&picture_type<=2) seen_file_icons|=picture_type;
         } else if (strcmp(optname, "padding")==0) {
           comment_padding=atoi(optarg);
+          save_cmd=0;
         } else if (strcmp(optname, "discard-comments")==0) {
           inopt.copy_comments=0;
           inopt.copy_pictures=0;
+          save_cmd=0;
         } else if (strcmp(optname, "discard-pictures")==0) {
           inopt.copy_pictures=0;
+          save_cmd=0;
         }
         /*Options whose arguments would leak file paths or just end up as
            metadata, or that relate only to input file handling or console
@@ -981,10 +1005,10 @@ int main(int argc, char **argv)
 
   if (bitrate>(1024000*chan)||bitrate<500) {
     fatal("Error: bitrate %d bits/sec is insane\n%s"
-      "--bitrate values from 6 to 256 kbit/s per channel are meaningful.\n",
+      "--bitrate values from 6 to 750 kbit/s per channel are meaningful.\n",
       bitrate, bitrate>=1000000 ? "Did you mistake bits for kilobits?\n" : "");
   }
-  bitrate=IMIN(chan*256000,bitrate);
+  bitrate=IMIN(chan*750000,bitrate);
 
   ret = ope_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate));
   if (ret != OPE_OK) {
@@ -1084,7 +1108,7 @@ int main(int argc, char **argv)
     if (data.nb_streams-data.nb_coupled>0) fprintf(stderr,
        "%s%d uncoupled", data.nb_coupled>0?", ":"",
        data.nb_streams-data.nb_coupled);
-    fprintf(stderr, "), %s\n          %0.2gms packets, %0.6g kbit/s%s\n",
+    fprintf(stderr, "), %s\n          %0.3gms packets, %0.6g kbit/s%s\n",
        channels_format_name(inopt.channels_format, chan),
        frame_size/(48000/1000.), bitrate/1000.,
        with_hard_cbr?" CBR":with_cvbr?" CVBR":" VBR");
@@ -1148,9 +1172,11 @@ int main(int argc, char **argv)
         }
         last_spin_len=(int)strlen(sbuf);
         snprintf(sbuf+last_spin_len,54-last_spin_len,
-          "%02d:%02d:%02d.%02d %4.3gx realtime, %5.4g kbit/s",
-          (int)(coded_seconds/3600),(int)(coded_seconds/60)%60,
-          (int)(coded_seconds)%60,(int)(coded_seconds*100)%100,
+          "%02" I64FORMAT ":%02d:%02d.%02d %4.3gx realtime, %5.4g kbit/s",
+          (opus_int64)(coded_seconds/3600),
+          (int)((opus_int64)(coded_seconds/60)%60),
+          (int)((opus_int64)(coded_seconds)%60),
+          (int)((opus_int64)(coded_seconds*100)%100),
           coded_seconds/(wall_time>0?wall_time:1e-6),
           estbitrate/1000.);
         fprintf(stderr,"%s",sbuf);

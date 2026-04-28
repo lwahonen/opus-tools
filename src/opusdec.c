@@ -42,6 +42,10 @@
 #include <string.h>
 #include <ctype.h> /*tolower()*/
 
+#ifdef HAVE_INTTYPES_H
+# include <inttypes.h>
+#endif
+
 #include <opus.h>
 #include <opusfile.h>
 
@@ -586,9 +590,10 @@ struct decode_cb_ctx {
    float loss_percent;
 };
 
-static int decode_cb(decode_cb_ctx *ctx, OpusMSDecoder *decoder, void *pcm,
+static int decode_cb(void *user_data, OpusMSDecoder *decoder, void *pcm,
  const ogg_packet *op, int nsamples, int nchannels, int format, int li)
 {
+   decode_cb_ctx *ctx = (decode_cb_ctx *)user_data;
    int lost;
    int ret;
    (void)nchannels;
@@ -790,13 +795,13 @@ int main(int argc, char **argv)
             force_stereo=1;
          } else if (strcmp(long_options[option_index].name,"gain")==0)
          {
-            manual_gain=atof(optarg);
+            manual_gain = (float)atof(optarg);
          } else if (strcmp(long_options[option_index].name,"save-range")==0)
          {
             rangeFile=optarg;
          } else if (strcmp(long_options[option_index].name,"packet-loss")==0)
          {
-            loss_percent = atof(optarg);
+            loss_percent = (float)atof(optarg);
          }
          break;
       case 'h':
@@ -823,16 +828,16 @@ int main(int argc, char **argv)
    file_output=argc_utf8-optind==2;
    if (file_output) {
      /*If we're outputting to a file, should we apply a wav header?*/
-     int i;
-     char *ext;
      outFile=argv_utf8[optind+1];
-     ext=".wav";
-     i=strlen(outFile)-4;
-     wav_format=i>=0;
-     while (wav_format&&ext&&outFile[i]) {
-       wav_format&=tolower(outFile[i++])==*ext++;
+     if (forcewav) wav_format = 1;
+     else {
+       int i;
+       size_t len = strlen(outFile);
+       wav_format = len >= 4;
+       for (i = 0; wav_format && i < 4; ++i) {
+         wav_format = tolower((unsigned char)outFile[len-4+i]) == ".wav"[i];
+       }
      }
-     wav_format|=forcewav;
    } else {
      outFile=NULL;
      wav_format=0;
